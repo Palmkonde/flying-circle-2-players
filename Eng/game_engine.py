@@ -209,10 +209,9 @@ class GameEngine:
         self.clock = pygame.time.Clock()
         self.player1 = player1
         self.player2 = player2
-        self.medals = [
-            Medal(center=(random.randint(100, 700), random.randint(100, 500)), mid=1),
-            Medal(center=(random.randint(100, 700), random.randint(100, 500)), mid=2)
-        ]
+        self.medals = []
+        for i in range(10):
+            self.medals.append(Medal(center=(random.randint(100, 700), random.randint(100, 500)), mid=i))
         self.score_font = pygame.font.SysFont("Arial", 30)
 
     def draw(self):
@@ -225,7 +224,7 @@ class GameEngine:
 
         for medal in self.medals:
             if medal.alive:
-                pygame.draw.circle(self.screen, (255, 255, 0), (medal.center[0], medal.center[1]), 10)
+                pygame.draw.circle(self.screen, (255, 255, 0), (medal.center[0], medal.center[1]), 5)
 
         # Draw scores
         score_text = self.score_font.render(f"Player 1: {self.player1.score}  Player 2: {self.player2.score}", True, (255, 255, 255))
