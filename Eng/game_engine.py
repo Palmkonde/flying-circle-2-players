@@ -118,7 +118,7 @@ class Circle:
         self.y_phantom = int(self.y)
         self.center = [self.x_phantom, self.y_phantom]
 
-    def resist_movement(self, magnitude: float = 0.98, cap: float = 70) -> None:
+    def resist_movement(self, magnitude: float = 0.98, cap: float = 40) -> None:
         velocity = round(get_distance((0,0), self.center), 5)
 
         if velocity > cap:
@@ -155,25 +155,35 @@ class GameCircle(Circle):
             other.velocity_vector[1] *= -1
             other.move()
 
-    def control(self, bound: Tuple[int, int], other: Circle,thrust_mod: float = 1, steer_mod: int = 1) -> None:
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_w]:
-            self.thrust(thrust_mod)
-        if keys[pygame.K_a]:
-            self.steer(steer_mod)
-        if keys[pygame.K_s]:
-            self.thrust(-thrust_mod)
-        if keys[pygame.K_d]:
-            self.steer(-steer_mod)
-
+    def set_boarder(self, bound: Tuple[int, int], other: Circle) -> None:
         self.status()
         self.move()
-        self.resist_movement()
+        self.resist_movement(magnitude=0.8 ,cap=1000)
         self.bounce_edge(bound)
         self.collision(other)
 
         self.arrow_head = [(self.center[0] + int(self.radius * self.head_vector[0])),
                            (self.center[1] + int(self.radius * self.head_vector[1]))]
+
+    # def control(self, bound: Tuple[int, int], other: Circle,thrust_mod: float = 1, steer_mod: int = 1) -> None:
+    #     keys = pygame.key.get_pressed()
+    #     if keys[pygame.K_w]:
+    #         self.thrust(thrust_mod)
+    #     if keys[pygame.K_a]:
+    #         self.steer(-steer_mod)
+    #     # if keys[pygame.K_s]:
+    #     #     self.thrust(-thrust_mod)
+    #     if keys[pygame.K_d]:
+    #         self.steer(steer_mod)
+
+    #     self.status()
+    #     self.move()
+    #     self.resist_movement(magnitude=0.8 ,cap=1000)
+    #     self.bounce_edge(bound)
+    #     self.collision(other)
+
+    #     self.arrow_head = [(self.center[0] + int(self.radius * self.head_vector[0])),
+    #                        (self.center[1] + int(self.radius * self.head_vector[1]))]
     
 class Medal:
     def __init__(self, center: Tuple[int, int], mid:int, score:int = 1, respawn=True) -> None:
@@ -200,8 +210,34 @@ class Medal:
             return self.score
         return 0
 
-
 class GameEngine:
+    def __init__(self, player1: GameCircle, player2: GameCircle, screen: Tuple[int, int] = (800, 600)) -> None:
+        self.player1 = player1
+        self.player2 = player2
+        self.screen = screen
+
+    def run(self, medals: int = 10, respawn=True) -> None:
+        self.medals_list = list()
+        for i in range(medals):
+            self.medals_list.append(Medal(center=(random.randint(100, 700), random.randint(100, 500)), mid=i))
+
+        while True:
+            self.player1.control((self.screen_value), self.player2)
+            self.player2.control((self.screen_value), self.player1)
+
+            for medal in self.medals:
+                if medal.alive:
+                    score = medal.get_medal(self.player1, new_center=(random.randint(100, 700), random.randint(100, 500)))
+                    if score > 0:
+                        self.player1.score += score
+                if medal.alive:
+                    score = medal.get_medal(self.player2, new_center=(random.randint(100, 700), random.randint(100, 500)))
+                    if score > 0:
+                        self.player2.score += score
+
+
+
+class PyGameEngine:
     def __init__(self, player1: GameCircle, player2: GameCircle, screen: Tuple[int, int] = (800, 600)) -> None:
         self.screen_value = screen
         self.screen = pygame.display.set_mode(screen)
@@ -267,6 +303,6 @@ if __name__ == "__main__":
     player1 = GameCircle(center=(300, 300), radius=20, id=1)
     player2 = GameCircle(center=(500, 300), radius=20, id=2)
 
-    engine = GameEngine(player1, player2)
+    engine = PyGameEngine(player1, player2)
 
     engine.run()

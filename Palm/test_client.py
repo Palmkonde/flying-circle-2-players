@@ -2,7 +2,7 @@ import socket
 import threading
 import json
 
-HOST = '127.0.0.1'
+HOST = '10.237.21.70'
 PORT = 5505 
 
 connecting_status = True
