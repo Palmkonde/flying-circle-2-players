@@ -1,7 +1,52 @@
 """
 It should work independently
 
-Sending data
+    Sending data
+    receive input from client and calculate then send 
+    
+    client -> key_press
+    server -> player position, coin position, score, direction <-- graphic
+    
+    initial
+    {
+        state: Waiting,
+        coin_position: [
+            {
+                id: 1,
+                position: (x, y)
+                is_collected: False
+            },
+            {
+                id: 2,
+                position: (x, y)
+                is_collected: False
+            }
+        ],
+
+        players,
+    }
+    
+    start_game
+    {
+        state: Playing 
+    }
+
+    players
+    {
+        id: 1,
+        player: {
+            center: (x, y),
+            direction: (x, y),
+            currenct_score: 0
+        },
+    }
+    
+    # when coin have collected. Destroy the coin from list and clients screen
+    coin_update
+    {
+        id: 1
+        is_colleted: True
+    }
 """
 
 import socket
@@ -22,7 +67,18 @@ class Client:
         self.data = {}
 
     def update_data(self, data: dict) -> None:
+        """ TODO: check that what data packet should look like """
         self.data = data
+
+    def update_user(self) -> None:
+        json_data = (json.dumps(self.data) + '\n').encode()
+        self.client_socket.send(json_data)
+
+
+def broadcast() -> None:
+    """ Update to every player """
+    for client in clients:
+        client.update_user()
 
 
 def handle_client(client: Client) -> None:
@@ -46,6 +102,7 @@ def handle_client(client: Client) -> None:
                     print(f"{client.id} has disconnected")
                     raise ConnectionError
 
+            # When we have recieved some data
             if buffer:
                 try:
                     # Update data of Client
@@ -53,8 +110,11 @@ def handle_client(client: Client) -> None:
                     json_data = json.loads(buffer.strip())
                     client.update_data(json_data)
                     client.client_socket.send("Data recieved".encode())
-                    
-                    # Debug
+
+                    # After update, send an update to every players
+                    broadcast()
+
+                    # DEBUG
                     print(f"Player {client.id}'s data")
                     print(json_data)
 
@@ -102,10 +162,11 @@ if __name__ == "__main__":
             continue
 
         # add player to list
-        id = len(clients) + 1 
+        id = len(clients) + 1
         print(f"players {id} joinned")
-        clients[id] = Client(client_socket, id) 
+        clients[id] = Client(client_socket, id)
 
         # Create new Thread for each player
-        client_thread = threading.Thread(target=handle_client, args=(clients[id], ))
+        client_thread = threading.Thread(
+            target=handle_client, args=(clients[id], ))
         client_thread.start()

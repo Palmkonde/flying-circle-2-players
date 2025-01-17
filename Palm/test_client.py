@@ -7,6 +7,7 @@ PORT = 5505
 
 connecting_status = True
 
+
 DUMMY_DATA = {
     "state": 12,
     "roate_left": "12",
