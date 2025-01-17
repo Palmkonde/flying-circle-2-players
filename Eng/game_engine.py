@@ -1,7 +1,6 @@
-from typing import Tuple
-from pynput.keyboard import Listener, Key
-import random, math, os
-import time
+from typing import Tuple, Dict
+import random, math
+
 
 class Circle:
     def __init__(self, center: Tuple[float, float], radius: int, id: int, direction: float) -> None:
@@ -31,9 +30,12 @@ class Circle:
             self.velocity_vector[1] *= magnitude
         self.move()
 
-    def get_status(self) -> None:
-        print(f"Circle {str(self.id).ljust(3)} Center ({self.x:.2f}, {self.y:.2f}) |v| {round(math.dist((0, 0), self.velocity_vector), 5):.2f} Direction {math.atan2(self.head_vector[1], self.head_vector[0]):.2f}")
-
+    def get_status(self) -> Dict:
+        return {
+            'center': (self.x, self.y),
+            'direction': (self.head_vector[0], self.head_vector[1]),
+            'score': 0  # Placeholder, score will be handled by the PlayerCircle class
+        }
 
 class PlayerCircle(Circle):
     def __init__(self, center, radius, id, direction):
@@ -74,6 +76,12 @@ class PlayerCircle(Circle):
         self.collision(other)
         self.get_arrow()
 
+    def get_status(self) -> Dict:
+        return {
+            'center': (self.x, self.y),
+            'direction': (self.head_vector[0], self.head_vector[1]),
+            'score': self.score
+        }
 
 class Medal:
     def __init__(self, center: Tuple[int, int], id: int, score: int = 1, respawn=True) -> None:
@@ -88,16 +96,19 @@ class Medal:
         distance = math.dist((self.x, self.y), (other.x, other.y))
         if distance < other.radius:
             if self.respawn:
-                self.center = new_center
+                self.x, self.y = new_center
             else:
-                self.center = [-10, -10]
+                self.x, self.y = [-10, -10]
                 self.alive = False
             return self.score
         return 0
 
-    def get_status(self) -> None:
-        print(f"Coin  {str(self.id).ljust(3)} Center ({self.x:.2f}, {self.y:.2f}) Alive {self.alive}")
-
+    def get_status(self) -> Dict:
+        return {
+            'id': self.id,
+            'position': (self.x, self.y),
+            'is_collected': not self.alive
+        }
 
 class GameEngine:
     def __init__(self, player1: PlayerCircle, player2: PlayerCircle, screen: Tuple[int, int] = (800, 600)) -> None:
@@ -105,28 +116,48 @@ class GameEngine:
         self.player2 = player2
         self.screen = screen
         self.medals_list = []
+        self.state = 0  # Game starts in a waiting state
 
-    def run(self, player1key, player2key, medals: int = 10, respawn=True) -> None:
-        self.medals_list = [Medal(center=(random.randint(100, 700), random.randint(100, 500)), id=i, respawn=respawn) for i in range(medals)]
+    def start_game(self):
+        self.state = 1
+
+    def run(self, player1key, player2key, medals: int = 10, respawn=True) -> Dict:
+        # If both players are in the "Waiting" state and either one of them has given input, start the game
+        if self.state == 0 and (player1key != (False, False, False) or player2key != (False, False, False)):
+            self.start_game()  # Change state to "Playing"
         
-        # Run the game logic for a few iterations
-        # for _ in range(100):
-        while True:
-            self.player1.control(self.screen, self.player2, player1key)
-            self.player2.control(self.screen, self.player1, player2key)
+        # Initialize medals list
+        self.medals_list = [Medal(center=(random.randint(100, 700), random.randint(100, 500)), id=i, respawn=respawn) for i in range(medals)]
 
-            self.player1.get_status()
-            self.player2.get_status()
+        # Process the controls and actions for each player
+        self.player1.control(self.screen, self.player2, player1key)
+        self.player2.control(self.screen, self.player1, player2key)
 
-            for medal in self.medals_list:
-                if medal.alive:
-                    score = medal.get_medal(self.player1, new_center=(random.randint(100, self.screen[0]-100), random.randint(100, self.screen[1]-100)))
-                    self.player1.score += score
-                    score = medal.get_medal(self.player2, new_center=(random.randint(100, self.screen[0]-100), random.randint(100, self.screen[1]-100)))
-                    self.player2.score += score
-                medal.get_status()
+        # Handle coin collection
+        for medal in self.medals_list:
+            if medal.alive:
+                # Check for medal collection
+                score = medal.get_medal(self.player1, new_center=(random.randint(100, self.screen[0] - 100), random.randint(100, self.screen[1] - 100)))
+                self.player1.score += score
+                score = medal.get_medal(self.player2, new_center=(random.randint(100, self.screen[0] - 100), random.randint(100, self.screen[1] - 100)))
+                self.player2.score += score
 
-            # os.system('cls' if os.name == 'nt' else 'clear')
+        # Collect current state data to return
+        game_state = {
+            "state": self.state,
+            "coin_position": [medal.get_status() for medal in self.medals_list],
+            "players": [
+                {
+                    "id": 1,
+                    "player": self.player1.get_status()
+                },
+                {
+                    "id": 2,
+                    "player": self.player2.get_status()
+                }
+            ]
+        }
+        return game_state
 
 
 # Real-time keyboard input handling with pynput (without creating a screen)
@@ -137,7 +168,6 @@ def key_apply(key: str) -> Tuple[bool, bool, bool]:
         'd': (False, False, True)
     }
     return keys.get(key, (False, False, False))
-
 
 # Test key input simulation
 if __name__ == "__main__":
@@ -151,12 +181,12 @@ if __name__ == "__main__":
     # Simulating the key presses for the test
     test_input_sequence = ['a', 'd', 'w', 'a', 'd']  # Simulating alternating 'a', 'd' and 'w' for the player1
 
-    tracker = 0
     for key in test_input_sequence:
         player1key = key_apply(key)
         player2key = key_apply('w')  # Simulate 'w' for player2 as an example
-        engine.run(player1key=player1key, player2key=player2key)
-        time.sleep(0.1)  # Adding a slight delay between iterations to simulate real-time
+
+        game_state = engine.run(player1key=player1key, player2key=player2key)
+        print(game_state)  # Output the game state data
 
     print(f"Player 1 Final Score: {player1.score}")
     print(f"Player 2 Final Score: {player2.score}")
