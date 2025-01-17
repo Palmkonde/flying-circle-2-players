@@ -1,12 +1,12 @@
 """
 It should work independently
 
-Calculating: 
+Calculating:
     - Use vector for circle
     - When we press a, d something like this vector should move + , - angle
     - It should calculate everything
         - Bouncing
-        - Colliding 
+        - Colliding
         - Collecting
         - Moving
         - Score
