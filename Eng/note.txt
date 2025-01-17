@@ -1,0 +1,10 @@
+        Client                              Server
+
+Input   Key                             ->  Engine
+Output  Position and other data         <-  
+
+
+Key: single key at the time
+
+Position:
+    
