@@ -77,8 +77,17 @@ class Client:
 
 def broadcast() -> None:
     """ Update to every player """
-    for client in clients:
-        client.update_user()
+    for id, client in clients.items():
+        try:
+            client.update_user() # TODO: something here
+                        
+        except Exception as e:
+            print (f"error broadcasting to {id}: {e}")
+        
+            # Handle if client not appear in clients
+            if id in clients:
+                clients.pop(id)
+                client.client_socket.close()
 
 
 def handle_client(client: Client) -> None:
@@ -106,10 +115,12 @@ def handle_client(client: Client) -> None:
             if buffer:
                 try:
                     # Update data of Client
-                    print(f"Upddating data of {client.id}")
+                    print(f"Upddating player {client.id}'s data")
                     json_data = json.loads(buffer.strip())
                     client.update_data(json_data)
-                    client.client_socket.send("Data recieved".encode())
+                    client.client_socket.send("Data recieved".encode()) # DEBUG
+                    
+                    # TODO:Process something here
 
                     # After update, send an update to every players
                     broadcast()
@@ -127,7 +138,7 @@ def handle_client(client: Client) -> None:
 
     finally:
         # clear and remove everything
-        if client_socket in clients:
+        if client.id in clients:
             clients.pop(client.id)
         client_socket.close()
 

@@ -47,7 +47,7 @@ if __name__ == "__main__":
                 while True:
                     data = sock.recv(32)
                     if data:
-                        print('received data chunk from server: ', repr(data))
+                        print('received data chunk from server: ', repr(data)) # DEBUG
                         message_received += data.decode()
                         if message_received.endswith("\n"):
                             break
@@ -55,6 +55,8 @@ if __name__ == "__main__":
                         print("Connection lost!")
                         connecting_status = False
                         break
+                
+                # print message that has received
                 print(message_received)
 
         except (ConnectionAbortedError, OSError):
