@@ -158,7 +158,7 @@ class GameCircle(Circle):
     def set_boarder(self, bound: Tuple[int, int], other: Circle) -> None:
         self.status()
         self.move()
-        self.resist_movement(magnitude=0.8 ,cap=1000)
+        self.resist_movement(magnitude=0.98 ,cap=700)
         self.bounce_edge(bound)
         self.collision(other)
 
@@ -298,11 +298,5 @@ class PyGameEngine:
 
 # Testing area
 if __name__ == "__main__":
-    pygame.init()
-
-    player1 = GameCircle(center=(300, 300), radius=20, id=1)
-    player2 = GameCircle(center=(500, 300), radius=20, id=2)
-
-    engine = PyGameEngine(player1, player2)
-
-    engine.run()
+    player1 = GameCircle
+    engine = GameEngine()
