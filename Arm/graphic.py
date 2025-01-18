@@ -1,13 +1,11 @@
 import pygame
 import sys
-import requests
-import random
 import math
 
 
 class Graphic:
-    SCREEN_WIDTH = 1200
-    SCREEN_HEIGHT = 750
+    SCREEN_WIDTH = 800
+    SCREEN_HEIGHT = 600
     DISPLAY = (SCREEN_WIDTH, SCREEN_HEIGHT)
 
     WHITE = (255, 255, 255)
@@ -31,9 +29,12 @@ class Graphic:
         self.screen = pygame.display.set_mode(self.DISPLAY)
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 36)
-        self.players = []
 
+        self.players = []
+ 
     def fetch_data(self) -> None:
+        
+        # TODO: edit this
         try:
             response = requests.get('http://127.0.0.1:5000/api/players')
             response.raise_for_status()
@@ -47,24 +48,8 @@ class Graphic:
             sys.exit()
 
     def populate_players(self, data: dict) -> None:
-        players_data = data.get('players', [])
-
-        if len(players_data) > len(self.COLORS):
-            players_data = players_data[:len(self.COLORS)]
-
-        for i in range(len(players_data)):
-            player = players_data[i]
-            position = self.generate_unique_position(i)
-            self.players.append({
-                'id': player['id'],
-                'name': player['name'],
-                'color': self.COLORS[i % len(self.COLORS)],
-                'position': position,
-                'score': player['score'],
-                'radius': 50,
-                'direction': [random.choice([-3, 3]), random.choice([-3, 3])]
-            })
-
+        self.players_data = data.get('players', [])
+    
     def generate_unique_position(self, index):
         radius = 50
         while True:
@@ -143,7 +128,7 @@ class Graphic:
 
 
 if __name__ == "__main__":
-    game_instance = Game()
+    game_instance = Graphic()
     
     game_instance.fetch_data()
     

@@ -66,6 +66,8 @@ PLAYER1_CENTER = (200, 400)
 PLAYER2_CENTER = (300, 400)
 PLAYER_RADIUS = 50
 
+SCREEN = (800, 600)
+
 
 class Client:
     def __init__(self, client_socket: socket.socket, id: str) -> None:
@@ -94,7 +96,7 @@ class Server():
         player2 = PlayerCircle(id=2, center=PLAYER2_CENTER,
                                radius=PLAYER_RADIUS, direction=pi)
 
-        self.engine = GameEngine(player1=player1, player2=player2)
+        self.engine = GameEngine(player1=player1, player2=player2, screen=SCREEN)
 
     def broadcast(self, data: dict) -> None:
         """ Update to every player """
