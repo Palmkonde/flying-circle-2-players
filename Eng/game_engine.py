@@ -174,7 +174,8 @@ class GameEngine:
 
 
 # Real-time keyboard input handling with pynput (without creating a screen)
-def key_apply(key: str) -> Tuple[bool, bool, bool]:
+def key_apply(client_data: 'json') -> Tuple[bool, bool, bool]:
+    key = client_data['key_pressed']
     keys = {
         'w': (True, False, False),
         'a': (False, True, False),
@@ -203,3 +204,10 @@ if __name__ == "__main__":
 
     print(f"Player 1 Final Score: {player1.score}")
     print(f"Player 2 Final Score: {player2.score}")
+
+    # client_input = {
+    #                 'id': 1,
+    #                 'key_pressed': '.'
+    #                 }
+    
+    # print(key_apply(client_input))
