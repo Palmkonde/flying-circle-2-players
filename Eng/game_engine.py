@@ -118,13 +118,40 @@ class GameEngine:
         self.medals_list = []
         self.state = 0  # Game starts in a waiting state
 
+        self.player1ready, self.player2ready = False, False
+
     def start_game(self):
         self.state = 1
 
+    def end_game(self):
+        self.state = 2
+
     def run(self, player1key, player2key, medals: int = 10, respawn=True, safe_spawn=100) -> Dict:
         # If both players are in the "Waiting" state and either one of them has given input, start the game
-        if self.state == 0 and (player1key != (False, False, False) or player2key != (False, False, False)):
-            self.start_game()  # Change state to "Playing"
+        if self.state == 0:
+            
+            if player1key == (True, True, True):
+                self.player1ready = True
+            if player2key == (True, True, True):
+                self.player2ready = True 
+
+            # Transition to state 1 if both players are ready
+            if self.player1ready and self.player2ready:
+                self.start_game()  # Change state to "Playing"
+                self.player1ready, self.player2ready = False, False  # Reset readiness state
+
+        elif self.state == 1:
+            # Transition to state 2 if either player presses (True, False, True)
+            if player1key == (True, False, True) or player2key == (True, False, True):
+                self.end_game()
+
+        elif self.state == 2:
+            # Transition to state 0 if both players press (True, True, True)
+            if player1key == (True, True, True) or player2key == (True, True, True):
+                self.state = 0
+
+        
+    
         
         # Initialize medals list
         for i in range(medals):
@@ -174,14 +201,21 @@ class GameEngine:
 
 
 # Real-time keyboard input handling with pynput (without creating a screen)
-def key_apply(client_data: 'json') -> Tuple[bool, bool, bool]:
-    key = client_data['key_pressed']
+def key_apply(client_data: dict) -> Tuple[bool, bool, bool]:
     keys = {
-        'w': (True, False, False),
-        'a': (False, True, False),
-        'd': (False, False, True)
-    }
+            'w': (True, False, False),
+            'a': (False, True, False),
+            'd': (False, False, True),
+            'space': (True, True, True),
+            'GG': (True, False, True)
+        }
+    if isinstance(client_data, dict):
+        key = client_data['key_pressed']
+    if isinstance(client_data, str):
+        key = client_data
+    
     return keys.get(key, (False, False, False))
+
 
 # Test key input simulation
 if __name__ == "__main__":
@@ -192,18 +226,37 @@ if __name__ == "__main__":
 
     engine = GameEngine(player1=player1, player2=player2, screen=SCREEN)
 
-    # Simulating the key presses for the test
-    test_input_sequence = ['a', 'd', 'w', 'a', 'd']  # Simulating alternating 'a', 'd' and 'w' for the player1
+    # Test Input Sequence simulates key presses for player 1 and player 2
+    test_input_sequence = [
+        ('space', 'w'),    # Player 1: (True, True, True) to start, Player 2: 'w'
+        ('w', 'space'),        # Player 1: 'a' (steer left), Player 2: 'd' (steer right)
+        ('w', 'a'),        # Player 1: 'w' (thrust), Player 2: 'a' (steer left)
+        ('d', 'GG'),       # Player 1: 'd' (steer right), Player 2: 'GG' (game end trigger)
+        ('w', 'w'),        # Player 1: 'w' (thrust), Player 2: 'w' (thrust)
+        ('space', 'a'),    # Player 1: (True, True, True) to restart the game, Player 2: 'a'
+        ('w', 'd'),        # Player 1: 'w' (thrust), Player 2: 'd' (steer right)
+        ('a', 'GG'),       # Player 1: 'a' (steer left), Player 2: 'GG' (game end trigger)
+        ('space', 'w')     # Player 1: (True, True, True) to restart the game, Player 2: 'w'
+    ]
 
-    for key in test_input_sequence:
-        player1key = key_apply(key)
-        player2key = key_apply('w')  # Simulate 'w' for player2 as an example
+    # Simulate key presses and run the game engine
+    for player1_key, player2_key in test_input_sequence:
+        # Apply keys for both players
+        player1key = key_apply(player1_key)
+        player2key = key_apply(player2_key)
 
+        # Run the game engine with the current keys
         game_state = engine.run(player1key=player1key, player2key=player2key)
-        print(game_state)  # Output the game state data
+        
+        # Output only the state information
+        if 'state' in game_state:
+            print(f"('state': {game_state['state']})")
 
+    # Optionally, print the final scores for verification
     print(f"Player 1 Final Score: {player1.score}")
     print(f"Player 2 Final Score: {player2.score}")
+
+
 
     # client_input = {
     #                 'id': 1,
