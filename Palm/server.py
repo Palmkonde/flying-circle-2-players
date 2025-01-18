@@ -116,6 +116,12 @@ class Server():
     def handle_client(self, client: Client) -> None:
         """ Handle data from each client """
         try:
+            # send player an id
+            print(client.id, type(client.id)) 
+            id_dict = {
+                "id": client.id 
+            }
+            client.client_socket.send((json.dumps(id_dict) + '\n').encode('utf-8'))
             while True:
                 buffer = b""
 
