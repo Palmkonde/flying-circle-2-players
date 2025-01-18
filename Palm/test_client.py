@@ -7,6 +7,7 @@ PORT = 5505
 
 connecting_status = True
 
+
 DUMMY_DATA = {
     "state": 12,
     "roate_left": "12",
@@ -46,7 +47,7 @@ if __name__ == "__main__":
                 while True:
                     data = sock.recv(32)
                     if data:
-                        print('received data chunk from server: ', repr(data))
+                        print('received data chunk from server: ', repr(data)) # DEBUG
                         message_received += data.decode()
                         if message_received.endswith("\n"):
                             break
@@ -54,6 +55,8 @@ if __name__ == "__main__":
                         print("Connection lost!")
                         connecting_status = False
                         break
+                
+                # print message that has received
                 print(message_received)
 
         except (ConnectionAbortedError, OSError):
