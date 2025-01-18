@@ -66,7 +66,7 @@ PLAYER1_CENTER = (200, 400)
 PLAYER2_CENTER = (300, 400)
 PLAYER_RADIUS = 50
 
-SCREEN = (800, 600)
+SCREEN = (1200, 750)
 
 
 class Client:
@@ -90,7 +90,7 @@ class Server():
         self.clients = {}
         self.user_input = {}
         self.game_state = {
-            "state": 1
+            "state": 0
         } 
 
         player1 = PlayerCircle(id=1, center=PLAYER1_CENTER,

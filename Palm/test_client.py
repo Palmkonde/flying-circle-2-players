@@ -106,7 +106,6 @@ def run_game() -> None:
     global game, share_data
     
     graphic = Graphics()
-    graphic.fetch_data(share_data)
     graphic.run_graphics()
 
 if __name__ == "__main__":
@@ -123,8 +122,8 @@ if __name__ == "__main__":
         # start Thread
         send_thread.start()
         receive_thread.start()
-        graphic_thread.start()
 
         # main_game
+        run_game()
 
     print("Client Closed")
