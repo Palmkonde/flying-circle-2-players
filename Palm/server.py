@@ -89,7 +89,9 @@ class Server():
     def __init__(self) -> None:
         self.clients = {}
         self.user_input = {}
-        self.game_state = {}
+        self.game_state = {
+            "state": 1
+        } 
 
         player1 = PlayerCircle(id=1, center=PLAYER1_CENTER,
                                radius=PLAYER_RADIUS, direction=0)
@@ -98,20 +100,22 @@ class Server():
 
         self.engine = GameEngine(player1=player1, player2=player2, screen=SCREEN)
 
-    def broadcast(self, data: dict) -> None:
+    def broadcast(self) -> None:
         """ Update to every player """
+        while True:
+            if self.clients:
+                for id, client in self.clients.items():
+                    try:
+                        print(self.game_state)
+                        client.update_user(self.game_state)
 
-        for id, client in self.clients.items():
-            try:
-                client.update_user(data)
+                    except Exception as e:
+                        print(f"error broadcasting to {id}: {e}")
 
-            except Exception as e:
-                print(f"error broadcasting to {id}: {e}")
-
-                # Handle if client not appear in clients
-                if id in self.clients:
-                    self.clients.pop(id)
-                    client.client_socket.close()
+                        # Handle if client not appear in clients
+                        if id in self.clients:
+                            self.clients.pop(id)
+                            client.client_socket.close()
 
     def handle_client(self, client: Client) -> None:
         """ Handle data from each client """
@@ -124,7 +128,7 @@ class Server():
 
             while True:
                 buffer = b""
-
+                
                 # receiving user input
                 while True:
                     data = client.client_socket.recv(32)
@@ -150,6 +154,7 @@ class Server():
                         json_data = json.loads(buffer.strip())
                         self.user_input = json_data
 
+                        # something change here
                         player1_input = None
                         player2_input = None
 
@@ -161,11 +166,7 @@ class Server():
 
                         self.game_state = self.engine.run(
                             player1key=key_apply(player1_input),
-                            # TODO: waiting for Eng
                             player2key=key_apply(player2_input))
-
-                        # After update, send an update to every players
-                        self.broadcast(self.game_state)
 
                         # DEBUG
                         print(f"Player {client.id}'s data updated")
@@ -224,6 +225,9 @@ class Server():
             # Create new Thread for each player
             client_thread = threading.Thread(
                 target=self.handle_client, args=(self.clients[id], ))
+            broadcast_thread = threading.Thread(target=self.broadcast)
+            
+            broadcast_thread.start()
             client_thread.start()
 
 

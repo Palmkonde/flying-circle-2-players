@@ -2,7 +2,7 @@ import socket
 import threading
 import json
 import pygame
-from Arm.graphic import Graphic
+from Arm.graphic import Graphics
 
 # DEBUG
 from pprint import pprint
@@ -49,6 +49,7 @@ def send_message(server_socket: socket.socket) -> None:
                 server_socket.sendall((json.dumps(data) + "\n").encode())
 
             pygame.time.delay(50)  # Small delay to reduce network load
+            pass
 
     except Exception as e:
         print(f"Error in send_key_presses: {e}")
@@ -73,8 +74,30 @@ def receive_data(sock: socket.socket) -> None:
                     print("Connection lost!")
                     connecting_status = False
                     break
+            
+            # Process each JSON object separated by '\n'
+            for json_message in message_received.split(b"\n"):
+                if json_message.strip():  # Skip empty lines
+                    try:
+                        json_data = json.loads(json_message)
+                        pprint(json_data)  # DEBUG
 
-            json_data = json.loads(message_received.decode())
+                        # First join: create a Client object
+                        if is_first_join:
+                            game = Client(json_data.get("id"))
+                            is_first_join = False
+                            continue
+
+                        # Update screen data
+                        try:
+                            game.players = json_data.get("players")
+                            game.state = json_data.get("state")
+                            game.coin_position = json_data.get("coin_position")
+                        except Exception as e:
+                            print(f"Error updating data: {e}")
+
+                    except json.JSONDecodeError as e:
+                        print(f"Failed to decode JSON: {e}, message: {json_message}")
 
             # print message that has received
             pprint(json_data)  # DEBUG
@@ -106,9 +129,8 @@ def receive_data(sock: socket.socket) -> None:
 def run_game() -> None:
     global game
     
-    graphic = Graphic()
-    graphic.fetch_data()
-    graphic.run_main()
+    graphic = Graphics()
+    graphic.run_graphics()
 
 if __name__ == "__main__":
     """ Open socket to connect the server """ 
