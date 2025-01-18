@@ -95,5 +95,5 @@ class Graphic:
         sys.exit()
 
 if __name__ == "__main__":
-    game_instance = Game()
+    game_instance = Graphic()
     game_instance.run_main()
