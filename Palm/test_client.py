@@ -29,6 +29,7 @@ def send_message(server_socket: socket.socket) -> None:
             connecting_status = False
             break
 
+        # TODO: send key_pressed to server
         if message.lower() == "!send":
             json_data = json.dumps(DUMMY_DATA)
             server_socket.send((json_data + '\n').encode())
@@ -63,7 +64,9 @@ if __name__ == "__main__":
 
                 json_data = json.loads(message_received.decode())
                 # print message that has received
-                pprint(json_data)
+                pprint(json_data)  # DEBUG
+
+                # TODO: put these data into graphic
 
         except (ConnectionAbortedError, OSError):
             print("Socket Closed")
