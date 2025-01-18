@@ -1,5 +1,6 @@
 import pygame
 import sys
+import math
 
 
 class Graphics:
@@ -83,10 +84,6 @@ class Graphics:
         distance = math.sqrt((player1['position'][0] - player2['position'][0]) ** 2 +
                              (player1['position'][1] - player2['position'][1]) ** 2)
         return distance < (player1['radius'] + player2['radius'])
-            self.screen.blit(
-                text_surface,
-                (self.SCREEN_WIDTH - text_surface.get_width() - 20, 20 + i * 30),
-            )
 
     def update_display(self):
         pygame.display.update()
