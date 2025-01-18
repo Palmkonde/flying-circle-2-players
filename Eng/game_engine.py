@@ -133,11 +133,14 @@ class GameEngine:
     def run(self, player1key, player2key, medals: int = 10, respawn=True, safe_spawn=100) -> Dict:
         # If both players are in the "Waiting" state and either one of them has given input, start the game
         if self.state == 0:
+            print(f"On engine run we got {player1key} {player2key}")
 
             if player1key == (True, True, True):
                 self.player1ready = True
             if player2key == (True, True, True):
                 self.player2ready = True
+                
+            print(f"Now player 1 is {self.player1ready}")
 
             # Transition to state 1 if both players are ready
             if self.player1ready and self.player2ready:
@@ -206,6 +209,7 @@ class GameEngine:
 
 # Real-time keyboard input handling with pynput (without creating a screen)
 def key_apply(client_data: dict) -> Tuple[bool, bool, bool]:
+    key = (False, False, False)
     keys = {
         'w': (True, False, False),
         'a': (False, True, False),

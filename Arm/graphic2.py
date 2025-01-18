@@ -54,12 +54,12 @@ class Graphics:
 
 
     def draw_player(self):
-
-        for player in self.data["players"]:
-            pygame.draw.circle(surface=self.screen, color=self.COLORS[3], \
-                               center=player["player"]["center"], radius=self.player_radius)
-            pygame.draw.line(surface=self.screen, color=self.WHITE, \
-                             start_pos=player["player"]["center"], end_pos=player["player"]["direction"])
+        try:
+            for player in self.data.get("players"):
+                pygame.draw.circle(surface=self.screen, color=self.COLORS[3], \
+                                center=player["player"]["center"], radius=self.player_radius)
+                pygame.draw.line(surface=self.screen, color=self.WHITE, \
+                                start_pos=player["player"]["center"], end_pos=player["player"]["direction"])
 
         # pygame.draw.circle(self.screen, player['color'], (
         #     player['position'][0], player['position'][1]), player['radius'])
@@ -77,11 +77,15 @@ class Graphics:
         #     center=(player["position"][0], player["position"][1])
         # )
         # self.screen.blit(text_surface, text_rect)
+        except Exception as e:
+            print(f"Error on draw_player: {e}")
 
     def draw_coin(self):
-
-        for coin_center in self.data["coin_position"]:
-            pygame.draw.circle(surface=self.screen, color=self.COLORS[4], center=coin_center, radius=5)
+        try:
+            for coin_center in self.data.get("coin_position"):
+                pygame.draw.circle(surface=self.screen, color=self.COLORS[4], center=coin_center, radius=5)
+        except Exception as e:
+            print(f"Error on draw_coin: {e}")
 
 
     def draw_scoreboard(self):
@@ -101,11 +105,12 @@ class Graphics:
             )
 
     def draw_waiting_screen(self):
-        if self.data["state"] == 0:
+        print(f"Data on draw wating screen: {self.data}")
+        if self.data.get("state") == 0:
             waiting_font = pygame.font.Font(None, 72)
-            waiting_text = waiting_font.render("Waiting for Players", True, self.BLACK)
+            waiting_text = waiting_font.render("Waiting for Players", True, self.WHITE)
 
-            controls_text = self.font.render("Press Space Bar to Start", True, self.BLACK)
+            controls_text = self.font.render("Press Space Bar to Start", True, self.WHITE)
 
             waiting_rect = waiting_text.get_rect(
                 center=(self.screen_width // 2, self.screen_height // 2 - 20)

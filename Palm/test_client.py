@@ -2,7 +2,9 @@ import socket
 import threading
 import json
 import pygame
-from Arm.graphic import Graphics
+import time
+# from Arm.graphic import Graphics
+from Arm.graphic2 import Graphics
 
 # DEBUG
 from pprint import pprint
@@ -63,8 +65,8 @@ def receive_data(sock: socket.socket) -> None:
             while True:
                 buffer = sock.recv(32)
                 if buffer:
-                    print('received data chunk from server: ',
-                            repr(buffer))  # DEBUG
+                    # print('received data chunk from server: ',
+                    #         repr(buffer))  # DEBUG
                     message_received += buffer
                     if message_received.endswith(b"\n"):
                         break
@@ -78,7 +80,7 @@ def receive_data(sock: socket.socket) -> None:
                 if json_message.strip():  # Skip empty lines
                     try:
                         json_data = json.loads(json_message)
-                        pprint(json_data)  # DEBUG
+                        # pprint(json_data)  # DEBUG
 
                         # First join: create a Client object
                         if is_first_join:
@@ -108,7 +110,7 @@ def run_game() -> None:
     # TODO:
     global share_data
     
-    graphic = Graphics(share_data)
+    graphic = Graphics(screen=(1200, 750), share_data=share_data)
     graphic.run_graphics()
 
 if __name__ == "__main__":
@@ -126,6 +128,7 @@ if __name__ == "__main__":
         receive_thread.start()
 
         # main_game
+        time.sleep(0.01)
         run_game()
 
     print("Client Closed")

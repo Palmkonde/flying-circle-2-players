@@ -103,19 +103,20 @@ class Server():
     def broadcast(self) -> None:
         """ Update to every player """
         while True:
-            if self.clients:
-                for id, client in self.clients.items():
-                    try:
-                        print(self.game_state)
-                        client.update_user(self.game_state)
+            for id in list(self.clients.keys()):
+                client = self.clients.get(id)  # Safely get the client object
+                if not client:
+                    continue
+                try:
+                    client.update_user(self.game_state)
 
-                    except Exception as e:
-                        print(f"error broadcasting to {id}: {e}")
+                except Exception as e:
+                    print(f"error broadcasting to {id}: {e}")
 
-                        # Handle if client not appear in clients
-                        if id in self.clients:
-                            self.clients.pop(id)
-                            client.client_socket.close()
+                    # Handle if client not appear in clients
+                    if id in self.clients:
+                        self.clients.pop(id)
+                        client.client_socket.close()
 
     def handle_client(self, client: Client) -> None:
         """ Handle data from each client """
