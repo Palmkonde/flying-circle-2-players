@@ -170,8 +170,6 @@ class Server():
 
                         # DEBUG
                         print(f"Player {client.id}'s data updated")
-                        # print(f"Player {client.id}'s data")
-                        # print(json_data)
 
                     except json.JSONDecodeError as e:
                         print(f"Error to decode JSON data: {e}")

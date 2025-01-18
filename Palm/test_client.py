@@ -36,6 +36,8 @@ def send_message(server_socket: socket.socket) -> None:
                 key_data["key"] = "a"
             elif keys[pygame.K_d]:
                 key_data["key"] = "d"
+            elif keys[pygame.K_SPACE]:
+                key_data["key"] = "space"
 
             if key_data:  # If there's any key pressed
                 data = {
@@ -103,9 +105,10 @@ def receive_data(sock: socket.socket) -> None:
         print("Existing Client...")
 
 def run_game() -> None:
-    global game, share_data
+    # TODO:
+    global share_data
     
-    graphic = Graphics()
+    graphic = Graphics(share_data)
     graphic.run_graphics()
 
 if __name__ == "__main__":
@@ -117,7 +120,6 @@ if __name__ == "__main__":
         # Thread for send a message
         send_thread = threading.Thread(target=send_message, args=(sock,))
         receive_thread = threading.Thread(target=receive_data, args=(sock,))
-        graphic_thread = threading.Thread(target=run_game)
         
         # start Thread
         send_thread.start()

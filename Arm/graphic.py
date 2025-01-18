@@ -23,8 +23,10 @@ class Graphics:
         (0, 128, 128),  # Teal
     ]
 
-    def __init__(self) -> None:
+    def __init__(self, data: dict) -> None:
         pygame.init()
+        
+        self.share_data = data
         self.screen = pygame.display.set_mode(self.DISPLAY)
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 36)
