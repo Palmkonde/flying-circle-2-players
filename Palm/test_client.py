@@ -2,32 +2,37 @@ import socket
 import threading
 import json
 
+# DEBUG
+from pprint import pprint
+
 HOST = '127.0.0.1'
-PORT = 5505 
+PORT = 5505
 
 connecting_status = True
 
+
 DUMMY_DATA = {
-    "state": 12,
-    "roate_left": "12",
-    "roate_right": 50,
+    "id": 1,
+    "key_pressed": 'w'
 }
+
 
 def send_message(server_socket: socket.socket) -> None:
     """ send a message to server """
     global connecting_status
     while connecting_status:
-        message = input(">")  
+        message = input(">")
 
         if message.lower() == "!exit":
-            server_socket.shutdown(socket.SHUT_RDWR) 
+            server_socket.shutdown(socket.SHUT_RDWR)
             server_socket.close()
             connecting_status = False
             break
-            
+
         if message.lower() == "!send":
             json_data = json.dumps(DUMMY_DATA)
             server_socket.send((json_data + '\n').encode())
+
 
 if __name__ == "__main__":
     """ Open socket to connect the server """
@@ -42,23 +47,27 @@ if __name__ == "__main__":
         try:
             # receiving messages
             while connecting_status:
-                message_received = ""
+                message_received = b""
                 while True:
-                    data = sock.recv(32)
-                    if data:
-                        print('received data chunk from server: ', repr(data))
-                        message_received += data.decode()
-                        if message_received.endswith("\n"):
+                    buffer = sock.recv(32)
+                    if buffer:
+                        print('received data chunk from server: ',
+                              repr(buffer))  # DEBUG
+                        message_received += buffer
+                        if message_received.endswith(b"\n"):
                             break
                     else:
                         print("Connection lost!")
                         connecting_status = False
                         break
-                print(message_received)
+
+                json_data = json.loads(message_received.decode())
+                # print message that has received
+                pprint(json_data)
 
         except (ConnectionAbortedError, OSError):
             print("Socket Closed")
-        
+
         finally:
             connecting_status = False
             send_thread.join()
