@@ -1,8 +1,7 @@
 import pygame
 import sys
 import requests
-import random
-import math
+
 
 class Graphics:
     SCREEN_WIDTH = 1200
@@ -13,16 +12,16 @@ class Graphics:
     BLACK = (0, 0, 0)
 
     COLORS = [
-        (255, 0, 0),    # Red
-        (0, 255, 0),    # Green
-        (0, 0, 255),    # Blue
+        (255, 0, 0),  # Red
+        (0, 255, 0),  # Green
+        (0, 0, 255),  # Blue
         (255, 255, 0),  # Yellow
         (255, 165, 0),  # Orange
         (128, 0, 128),  # Purple
         (0, 255, 255),  # Cyan
-        (255, 192, 203),# Pink
+        (255, 192, 203),  # Pink
         (128, 128, 0),  # Olive
-        (0, 128, 128)   # Teal
+        (0, 128, 128),  # Teal
     ]
 
     def __init__(self) -> None:
@@ -38,6 +37,12 @@ class Graphics:
             response.raise_for_status()
             data = response.json()
             self.populate_players(data)
+            print("Player data fetched successfully.")
+            for player in self.players:
+                print(
+                    f"ID: {player['id']}, Position: {player['position']}, Direction: {player['direction']}, Score: {player['score']}"
+                )
+
         except requests.RequestException as e:
             print(f"Error fetching player data: {e}")
             sys.exit()
@@ -56,12 +61,10 @@ class Graphics:
                 "id": player["id"],
                 "name": player["name"],
                 "color": self.COLORS[i % len(self.COLORS)],
-                "position": [
-                    random.randint(50, self.SCREEN_WIDTH - 50),
-                    random.randint(50, self.SCREEN_HEIGHT - 50),
-                ],
+                "position": player["center"],
                 "score": player["score"],
                 "radius": 50,
+                "direction": player.get("direction"),
             }
             for i, player in enumerate(players_data)
         ]
@@ -78,22 +81,23 @@ class Graphics:
             (player["position"][0], player["position"][1]),
             player["radius"],
         )
+
         text_surface = self.font.render(player["name"], True, self.WHITE)
-        text_rect = text_surface.get_rect(center=(player["position"][0], player["position"][1]))
+        text_rect = text_surface.get_rect(
+            center=(player["position"][0], player["position"][1])
+        )
         self.screen.blit(text_surface, text_rect)
 
     def draw_scoreboard(self):
         players_sorted = sorted(self.players, key=lambda x: x["score"], reverse=True)
-        scoreboard_lines = []
-        
-        for rank, player in enumerate(players_sorted, start=1):
-            scoreboard_lines.append(f"Rank {rank}: {player['name']} - {player['score']}")
 
-        for i, line in enumerate(scoreboard_lines):
-            text_surface = self.font.render(line, True, self.BLACK)
-            self.screen.blit(text_surface,
-                             (self.SCREEN_WIDTH - text_surface.get_width() - 20,
-                              20 + i * 30))
+        for rank, player in enumerate(players_sorted):
+            scoreboard_text = f"Rank {rank + 1}: {player['name']} - {player['score']}"
+            text_surface = self.font.render(scoreboard_text, True, self.BLACK)
+            self.screen.blit(
+                text_surface,
+                (self.SCREEN_WIDTH - text_surface.get_width() - 20, 20 + rank * 30),
+            )
 
     def run_graphics(self) -> None:
         running = True
@@ -112,13 +116,10 @@ class Graphics:
             pygame.display.update()
             self.clock.tick(60)
 
-        pygame.quit()
-        sys.exit()
-
 
 if __name__ == "__main__":
     graphics_instance = Graphics()
 
-    graphics_instance.fetch_data()   # Fetch data from server
+    graphics_instance.fetch_data()
 
-    graphics_instance.run_graphics()   # Start the graphics loop
+    graphics_instance.run_graphics()
