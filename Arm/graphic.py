@@ -1,53 +1,71 @@
 import pygame
 import sys
 import requests
+import random
+import math
 
 class Game:
-    SCREEN_WIDTH = 800
-    SCREEN_HEIGHT = 600
+    SCREEN_WIDTH = 1200
+    SCREEN_HEIGHT = 750
     DISPLAY = (SCREEN_WIDTH, SCREEN_HEIGHT)
 
     WHITE = (255, 255, 255)
-    RED = (255, 0, 0)
-    GREEN = (0, 255, 0)
     BLACK = (0, 0, 0)
+
+    COLORS = [
+        (255, 0, 0),    # Red
+        (0, 255, 0),    # Green
+        (0, 0, 255),    # Blue
+        (255, 255, 0),  # Yellow
+        (255, 165, 0),  # Orange
+        (128, 0, 128),  # Purple
+        (0, 255, 255),  # Cyan
+        (255, 192, 203),# Pink
+        (128, 128, 0),  # Olive
+        (0, 128, 128)   # Teal
+    ]
 
     def __init__(self) -> None:
         pygame.init()
         self.screen = pygame.display.set_mode(self.DISPLAY)
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 36)
+        self.players = []
 
-        self.players = self.fetch_player_data()
-
-    def fetch_player_data(self) -> list:
+    def fetch_data(self) -> None:
         try:
-            response = requests.get('http://yourserver.com/api/players')
+            response = requests.get('http://127.0.0.1:5000/api/players')
             response.raise_for_status()
             data = response.json()
-            players_data = data['players']
-
-            if len(players_data) > 10:
-                players_data = players_data[:10]
-
-            return [
-                {
-                    'id': player['id'],
-                    'name': player['name'],
-                    'color': RED if player['id'] % 2 == 1 else GREEN,
-                    'position': list(player['center']),
-                    'velocity': list(player['direction']),
-                    'score': player['score'],
-                    'radius': 30
-                }
-                for player in players_data
-            ]
+            self.populate_players(data)
         except requests.RequestException as e:
             print(f"Error fetching player data: {e}")
             sys.exit()
         except ValueError as e:
             print(f"JSON decoding error: {e}")
             sys.exit()
+
+    def populate_players(self, data: dict) -> None:
+        players_data = data.get('players', [])
+
+        if len(players_data) > len(self.COLORS):
+            players_data = players_data[:len(self.COLORS)]
+
+        self.players = [
+            {
+                'id': player['id'],
+                'name': player['name'],
+                'color': self.COLORS[i % len(self.COLORS)],
+                'position': [
+                    random.randint(50, self.SCREEN_WIDTH - 50),
+                    random.randint(50, self.SCREEN_HEIGHT - 50)
+                ],
+                'score': player['score'],
+                'radius': 50,
+                'direction': [random.choice([-3, 3]), random.choice([-3, 3])] # Random initial direction
+            }
+            for i, player in enumerate(players_data)
+        ]
 
     def draw_player(self, player):
         pygame.draw.circle(self.screen, player['color'], (player['position'][0], player['position'][1]), player['radius'])
@@ -68,9 +86,25 @@ class Game:
     def update_player_positions(self):
         for player in self.players:
             for i in range(2):
-                player['position'][i] += player['velocity'][i]
+                player['position'][i] += player['direction'][i]
+
                 if player['position'][i] < player['radius'] or player['position'][i] > (self.SCREEN_WIDTH if i == 0 else self.SCREEN_HEIGHT) - player['radius']:
-                    player['velocity'][i] *= -1
+                    player['direction'][i] *= -1
+
+            for other_player in self.players:
+                if other_player != player:
+                    if self.check_collision(player, other_player):
+                        self.handle_collision(player, other_player)
+
+    def check_collision(self, player1, player2):
+        distance = math.sqrt((player1['position'][0] - player2['position'][0]) ** 2 + 
+                             (player1['position'][1] - player2['position'][1]) ** 2)
+        return distance < (player1['radius'] + player2['radius'])
+
+    def handle_collision(self, player1, player2):
+        temp_direction = list(player1['direction'])
+        player1['direction'] = list(player2['direction'])
+        player2['direction'] = temp_direction
 
     def run_main(self) -> None:
         running = True
@@ -96,4 +130,7 @@ class Game:
 
 if __name__ == "__main__":
     game_instance = Game()
+    
+    game_instance.fetch_data()
+    
     game_instance.run_main()
