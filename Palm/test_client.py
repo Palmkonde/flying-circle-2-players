@@ -13,17 +13,13 @@ PORT = 5505
 connecting_status = True
 is_first_join = True
 game = None 
+share_data = {}
 
 pygame.init()
 
 class Client:
     def __init__(self, id: int) -> None:
         self.id = id
-        self.state = 0
-        self.coin_postion = []
-        
-        # players data
-        self.players = {} 
 
 def send_message(server_socket: socket.socket) -> None:
     """ send a message to server """
@@ -57,7 +53,7 @@ def send_message(server_socket: socket.socket) -> None:
         
 
 def receive_data(sock: socket.socket) -> None:
-    global game, connecting_status, is_first_join
+    global game, connecting_status, is_first_join, share_data
     try:
         # receiving messages
         while connecting_status:
@@ -90,33 +86,13 @@ def receive_data(sock: socket.socket) -> None:
 
                         # Update screen data
                         try:
-                            game.players = json_data.get("players")
-                            game.state = json_data.get("state")
-                            game.coin_position = json_data.get("coin_position")
+                            share_data = json_data
                         except Exception as e:
                             print(f"Error updating data: {e}")
 
                     except json.JSONDecodeError as e:
                         print(f"Failed to decode JSON: {e}, message: {json_message}")
 
-            # print message that has received
-            pprint(json_data)  # DEBUG
-
-            # TODO: put these data into graphic
-            # first join create an client object
-            if is_first_join:
-                game = Client(json_data.get("id"))
-                is_first_join = False
-                continue
-
-            # Update screen data
-            try:
-                game.players = json_data.get("players")
-                game.state = json_data.get("state")
-                game.coin_position = json_data.get("coin_position")
-            
-            except Exception as e:
-                print(f"Error try to update data: {e}")
 
     except (ConnectionAbortedError, OSError):
         print("Socket Closed")
@@ -127,9 +103,10 @@ def receive_data(sock: socket.socket) -> None:
         print("Existing Client...")
 
 def run_game() -> None:
-    global game
+    global game, share_data
     
     graphic = Graphics()
+    graphic.fetch_data(share_data)
     graphic.run_graphics()
 
 if __name__ == "__main__":
@@ -141,12 +118,13 @@ if __name__ == "__main__":
         # Thread for send a message
         send_thread = threading.Thread(target=send_message, args=(sock,))
         receive_thread = threading.Thread(target=receive_data, args=(sock,))
+        graphic_thread = threading.Thread(target=run_game)
         
         # start Thread
         send_thread.start()
         receive_thread.start()
+        graphic_thread.start()
 
         # main_game
-        run_game()
 
     print("Client Closed")
