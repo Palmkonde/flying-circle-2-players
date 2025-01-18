@@ -51,21 +51,28 @@ class Game:
         if len(players_data) > len(self.COLORS):
             players_data = players_data[:len(self.COLORS)]
 
-        self.players = [
-            {
+        for i in range(len(players_data)):
+            player = players_data[i]
+            position = self.generate_unique_position(i)
+            self.players.append({
                 'id': player['id'],
                 'name': player['name'],
                 'color': self.COLORS[i % len(self.COLORS)],
-                'position': [
-                    random.randint(50, self.SCREEN_WIDTH - 50),
-                    random.randint(50, self.SCREEN_HEIGHT - 50)
-                ],
+                'position': position,
                 'score': player['score'],
                 'radius': 50,
-                'direction': [random.choice([-3, 3]), random.choice([-3, 3])] # Random initial direction
-            }
-            for i, player in enumerate(players_data)
-        ]
+                'direction': [random.choice([-3, 3]), random.choice([-3, 3])]
+            })
+
+    def generate_unique_position(self, index):
+        radius = 50
+        while True:
+            position = [
+                random.randint(radius, self.SCREEN_WIDTH - radius),
+                random.randint(radius, self.SCREEN_HEIGHT - radius)
+            ]
+            if not any(self.check_collision({'position': position, 'radius': radius}, player) for player in self.players):
+                return position
 
     def draw_player(self, player):
         pygame.draw.circle(self.screen, player['color'], (player['position'][0], player['position'][1]), player['radius'])
