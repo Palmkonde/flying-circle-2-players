@@ -121,13 +121,20 @@ class GameEngine:
     def start_game(self):
         self.state = 1
 
-    def run(self, player1key, player2key, medals: int = 10, respawn=True) -> Dict:
+    def run(self, player1key, player2key, medals: int = 10, respawn=True, safe_spawn=100) -> Dict:
         # If both players are in the "Waiting" state and either one of them has given input, start the game
         if self.state == 0 and (player1key != (False, False, False) or player2key != (False, False, False)):
             self.start_game()  # Change state to "Playing"
         
         # Initialize medals list
-        self.medals_list = [Medal(center=(random.randint(100, 700), random.randint(100, 500)), id=i, respawn=respawn) for i in range(medals)]
+        for i in range(medals):
+            while True:
+                spawn_x = random.randint(100, self.screen[0] - 100)
+                spawn_y = random.randint(100, self.screen[1] - 100)
+                if math.dist((self.player1.x, self.player1.y), (spawn_x, spawn_y)) > safe_spawn \
+                    and math.dist((self.player2.x, self.player2.y), (spawn_x, spawn_y)) > safe_spawn:
+                    break
+            self.medals_list.append(Medal(center=(random.randint(100, 700), random.randint(100, 500)), id=i, respawn=respawn))
 
         # Process the controls and actions for each player
         self.player1.control(self.screen, self.player2, player1key)
@@ -137,9 +144,15 @@ class GameEngine:
         for medal in self.medals_list:
             if medal.alive:
                 # Check for medal collection
-                score = medal.get_medal(self.player1, new_center=(random.randint(100, self.screen[0] - 100), random.randint(100, self.screen[1] - 100)))
+                while True:
+                    spawn_x = random.randint(100, self.screen[0] - 100)
+                    spawn_y = random.randint(100, self.screen[1] - 100)
+                    if math.dist((self.player1.x, self.player1.y), (spawn_x, spawn_y)) > safe_spawn \
+                        and math.dist((self.player2.x, self.player2.y), (spawn_x, spawn_y)) > safe_spawn:
+                        break
+                score = medal.get_medal(self.player1, new_center=(spawn_x, spawn_y))
                 self.player1.score += score
-                score = medal.get_medal(self.player2, new_center=(random.randint(100, self.screen[0] - 100), random.randint(100, self.screen[1] - 100)))
+                score = medal.get_medal(self.player2, new_center=(spawn_x, spawn_y))
                 self.player2.score += score
 
         # Collect current state data to return
