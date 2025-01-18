@@ -2,16 +2,18 @@ import socket
 import threading
 import json
 
-HOST = '10.237.21.70'
+# DEBUG
+from pprint import pprint
+
+HOST = '127.0.0.1'
 PORT = 5505 
 
 connecting_status = True
 
 
 DUMMY_DATA = {
-    "state": 12,
-    "roate_left": "12",
-    "roate_right": 50,
+    "id": 1,
+    "key_pressed": 'w'
 }
 
 def send_message(server_socket: socket.socket) -> None:
@@ -43,21 +45,22 @@ if __name__ == "__main__":
         try:
             # receiving messages
             while connecting_status:
-                message_received = ""
+                message_received = b""
                 while True:
-                    data = sock.recv(32)
-                    if data:
-                        print('received data chunk from server: ', repr(data)) # DEBUG
-                        message_received += data.decode()
-                        if message_received.endswith("\n"):
+                    buffer = sock.recv(32)
+                    if buffer:
+                        print('received data chunk from server: ', repr(buffer)) # DEBUG
+                        message_received += buffer
+                        if message_received.endswith(b"\n"):
                             break
                     else:
                         print("Connection lost!")
                         connecting_status = False
                         break
                 
+                json_data = json.loads(message_received.decode())
                 # print message that has received
-                print(message_received)
+                pprint(json_data)
 
         except (ConnectionAbortedError, OSError):
             print("Socket Closed")

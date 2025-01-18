@@ -52,132 +52,174 @@ It should work independently
 import socket
 import json
 import threading
+from math import pi
+from Eng.game_engine import GameEngine, PlayerCircle, key_apply
+
+
+# DEBUG Tool
+from pprint import pprint
 
 HOST = "0.0.0.0"
 PORT = 5505
-MAX_CLIENT_NUMBER = 2
 
-clients = {}
+SCREEN = (800, 600)
+PLAYER1_CENTER = (200, 400)
+PLAYER2_CENTER = (300, 400)
+PLAYER_RADIUS = 50
 
 
 class Client:
     def __init__(self, client_socket: socket.socket, id: str) -> None:
         self.client_socket = client_socket
         self.id = id
-        self.data = {}
 
-    def update_data(self, data: dict) -> None:
-        """ TODO: check that what data packet should look like """
-        self.data = data
-
-    def update_user(self) -> None:
-        json_data = (json.dumps(self.data) + '\n').encode()
-        self.client_socket.send(json_data)
-
-
-def broadcast() -> None:
-    """ Update to every player """
-    for id, client in clients.items():
+    def update_user(self, data: dict) -> None:
+        # TODO: do something here
         try:
-            client.update_user() # TODO: something here
-                        
+            json_form = json.dumps(data)
+            self.client_socket.sendall((json_form + '\n').encode())
+
         except Exception as e:
-            print (f"error broadcasting to {id}: {e}")
-        
-            # Handle if client not appear in clients
-            if id in clients:
-                clients.pop(id)
-                client.client_socket.close()
+            print(f"error to update user: {e}")
 
 
-def handle_client(client: Client) -> None:
-    """ Handle data from each client """
-    try:
-        while True:
-            buffer = b""
+class Server():
+    MAX_CLIENT_NUMBER = 2
 
-            # receiving message
+    def __init__(self) -> None:
+        self.clients = {}
+        self.user_input = {}
+        self.game_state = {}
+
+        player1 = PlayerCircle(id=1, center=PLAYER1_CENTER,
+                               radius=PLAYER_RADIUS, direction=0)
+        player2 = PlayerCircle(id=2, center=PLAYER2_CENTER,
+                               radius=PLAYER_RADIUS, direction=pi)
+
+        self.engine = GameEngine(player1=player1, player2=player2)
+
+    def broadcast(self, data:dict) -> None:
+        """ Update to every player """
+
+        for id, client in self.clients.items():
+            try:
+                client.update_user(data) 
+
+            except Exception as e:
+                print(f"error broadcasting to {id}: {e}")
+
+                # Handle if client not appear in clients
+                if id in self.clients:
+                    self.clients.pop(id)
+                    client.client_socket.close()
+
+    def handle_client(self, client: Client) -> None:
+        """ Handle data from each client """
+        try:
             while True:
-                data = client.client_socket.recv(32)
+                buffer = b""
 
-                # receive data as bytes
-                if data:
-                    buffer += data
+                # receiving user input
+                while True:
+                    data = client.client_socket.recv(32)
 
-                    if buffer.endswith(b'\n'):
-                        break
-                else:
-                    # disconnected
-                    print(f"{client.id} has disconnected")
-                    raise ConnectionError
+                    # receive data as bytes
+                    if data:
+                        buffer += data
 
-            # When we have recieved some data
-            if buffer:
-                try:
-                    # Update data of Client
-                    print(f"Upddating player {client.id}'s data")
-                    json_data = json.loads(buffer.strip())
-                    client.update_data(json_data)
-                    client.client_socket.send("Data recieved".encode()) # DEBUG
-                    
-                    # TODO:Process something here
+                        if buffer.endswith(b'\n'):
+                            break
+                    else:
+                        # disconnected
+                        print(f"{client.id} has disconnected")
+                        raise ConnectionError
 
-                    # After update, send an update to every players
-                    broadcast()
+                # When we have recieved some data
+                if buffer:
+                    try:
+                        # Update data of Client
+                        print(f"Upddating player {client.id}'s data")  # DEBUG
+                        # client.client_socket.send("Data recieved".encode()) # DEBUG
 
-                    # DEBUG
-                    print(f"Player {client.id}'s data")
-                    print(json_data)
+                        json_data = json.loads(buffer.strip())
+                        self.user_input = json_data
 
-                except json.JSONDecodeError as e:
-                    print(f"Error to decode JSON data: {e}")
+                        player1_input = None
+                        player2_input = None
+                        
+                        if self.user_input.get('id') == 1:
+                            player1_input = self.user_input.get('key_pressed')
 
-    except ConnectionError:
-        # Show on the server and send it to everyone
-        print(f"{client.id} left the game!")
+                        elif self.user_input.get('id') == 2:
+                            player2_input = self.user_input.get('key_pressed')
 
-    finally:
-        # clear and remove everything
-        if client.id in clients:
-            clients.pop(client.id)
-        client_socket.close()
+                        self.game_state = self.engine.run(
+                            player1key=key_apply(player1_input), 
+                            player2key=key_apply(player2_input)) # TODO: waiting for Eng
+
+                        # After update, send an update to every players
+                        self.broadcast(self.game_state)
+
+                        print(f"Player {client.id}'s data updated")
+                        # DEBUG
+                        # print(f"Player {client.id}'s data")
+                        # print(json_data)
+
+                    except json.JSONDecodeError as e:
+                        print(f"Error to decode JSON data: {e}")
+
+        except ConnectionError:
+            # Show on the server and send it to everyone
+            print(f"{client.id} left the game!")
+
+        finally:
+            # clear and remove everything
+            if client.id in self.clients:
+                self.clients.pop(client.id)
+            client.client_socket.close()
+
+    def run_server(self) -> None:
+        """ run main server """
+
+        # initial server
+        try:
+            server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            print("Socket created")
+        except OSError as msg:
+            server = None
+            print(f"Error creating socket: {msg}")
+            exit(1)
+
+        try:
+            server.bind((HOST, PORT))
+            server.listen()
+            print(f"Socket bound and server is listening on {HOST}:{PORT}")
+        except OSError as msg:
+            print(f"Error binding/listening!: {msg}")
+            server.close()
+            exit(1)
+
+        # main loop
+        while True:
+            client_socket, client_address = server.accept()
+
+            # Check whether players are full now
+            if len(self.clients) >= self.MAX_CLIENT_NUMBER:
+                client_socket.send("Server Room is full now".encode())
+                client_socket.shutdown(socket.SHUT_RDWR)
+                continue
+
+            # add player to list
+            id = len(self.clients) + 1
+            print(f"players {id} joinned")
+            self.clients[id] = Client(client_socket, id)
+
+            # Create new Thread for each player
+            client_thread = threading.Thread(
+                target=self.handle_client, args=(self.clients[id], ))
+            client_thread.start()
 
 
-if __name__ == "__main__":
-    # intial server
-    try:
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        print("Socket created")
-    except OSError as msg:
-        server = None
-        print(f"Error creating socket: {msg}")
-        exit(1)
-
-    try:
-        server.bind((HOST, PORT))
-        server.listen()
-        print(f"Socket bound and server is listening on {HOST}:{PORT}")
-    except OSError as msg:
-        print(f"Error binding/listening!: {msg}")
-        server.close()
-        exit(1)
-
-    # main loop
-    while True:
-        client_socket, client_address = server.accept()
-
-        # Check whether players are full now
-        if len(clients) >= MAX_CLIENT_NUMBER:
-            client_socket.send("Server Room is full now".encode())
-            client_socket.shutdown(socket.SHUT_RDWR)
-            continue
-
-        # add player to list
-        id = len(clients) + 1
-        print(f"players {id} joinned")
-        clients[id] = Client(client_socket, id)
-
-        # Create new Thread for each player
-        client_thread = threading.Thread(
-            target=handle_client, args=(clients[id], ))
-        client_thread.start()
+if __name__ == '__main__':
+    server = Server()
+    server.run_server()

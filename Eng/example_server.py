@@ -40,6 +40,7 @@
 
 
 from game_engine import *
+from pprint import pprint
 
 
 # client inputs
@@ -51,7 +52,7 @@ if __name__ == "__main__":
 
     SCREEN = (500, 600)
 
-    player1 = PlayerCircle(center=(200, 400), radius=50, id=1, direction=math.pi / 2)
+    player1 = PlayerCircle(center=(200, 400), radius=50, id=1, direction=0)
     player2 = PlayerCircle(center=(300, 400), radius=50, id=2, direction=math.pi / 2)
 
     engine = GameEngine(player1=player1, player2=player2, screen=SCREEN)
@@ -59,7 +60,7 @@ if __name__ == "__main__":
     while True:
         game_state = engine.run(player1key=key_apply(client1_input), player2key=key_apply(client2_input))
 
-        print(game_state)  # Output game data JSON format
+        pprint(game_state)  # Output game data JSON format
 
 
 
