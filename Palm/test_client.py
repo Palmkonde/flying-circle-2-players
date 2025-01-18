@@ -1,6 +1,7 @@
 import socket
 import threading
 import json
+from Arm.graphic import Graphic
 
 # DEBUG
 from pprint import pprint
@@ -37,6 +38,7 @@ def send_message(server_socket: socket.socket) -> None:
 
 if __name__ == "__main__":
     """ Open socket to connect the server """
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect((HOST, PORT))
         print("Connected to server")

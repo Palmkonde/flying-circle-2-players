@@ -62,7 +62,6 @@ from pprint import pprint
 HOST = "0.0.0.0"
 PORT = 5505
 
-SCREEN = (800, 600)
 PLAYER1_CENTER = (200, 400)
 PLAYER2_CENTER = (300, 400)
 PLAYER_RADIUS = 50

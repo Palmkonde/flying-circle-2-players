@@ -2,7 +2,7 @@ import pygame
 import sys
 import requests
 
-class Game:
+class Graphic:
     SCREEN_WIDTH = 800
     SCREEN_HEIGHT = 600
     DISPLAY = (SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -34,7 +34,7 @@ class Game:
                 {
                     'id': player['id'],
                     'name': player['name'],
-                    'color': RED if player['id'] % 2 == 1 else GREEN,
+                    'color': self.RED if player['id'] % 2 == 1 else self.GREEN,
                     'position': list(player['center']),
                     'velocity': list(player['direction']),
                     'score': player['score'],
