@@ -6,7 +6,7 @@ import json
 from pprint import pprint
 
 HOST = '127.0.0.1'
-PORT = 5505 
+PORT = 5505
 
 connecting_status = True
 
@@ -16,21 +16,23 @@ DUMMY_DATA = {
     "key_pressed": 'w'
 }
 
+
 def send_message(server_socket: socket.socket) -> None:
     """ send a message to server """
     global connecting_status
     while connecting_status:
-        message = input(">")  
+        message = input(">")
 
         if message.lower() == "!exit":
-            server_socket.shutdown(socket.SHUT_RDWR) 
+            server_socket.shutdown(socket.SHUT_RDWR)
             server_socket.close()
             connecting_status = False
             break
-            
+
         if message.lower() == "!send":
             json_data = json.dumps(DUMMY_DATA)
             server_socket.send((json_data + '\n').encode())
+
 
 if __name__ == "__main__":
     """ Open socket to connect the server """
@@ -49,7 +51,8 @@ if __name__ == "__main__":
                 while True:
                     buffer = sock.recv(32)
                     if buffer:
-                        print('received data chunk from server: ', repr(buffer)) # DEBUG
+                        print('received data chunk from server: ',
+                              repr(buffer))  # DEBUG
                         message_received += buffer
                         if message_received.endswith(b"\n"):
                             break
@@ -57,14 +60,14 @@ if __name__ == "__main__":
                         print("Connection lost!")
                         connecting_status = False
                         break
-                
+
                 json_data = json.loads(message_received.decode())
                 # print message that has received
                 pprint(json_data)
 
         except (ConnectionAbortedError, OSError):
             print("Socket Closed")
-        
+
         finally:
             connecting_status = False
             send_thread.join()

@@ -74,7 +74,6 @@ class Client:
         self.id = id
 
     def update_user(self, data: dict) -> None:
-        # TODO: do something here
         try:
             json_form = json.dumps(data)
             self.client_socket.sendall((json_form + '\n').encode())
@@ -98,12 +97,12 @@ class Server():
 
         self.engine = GameEngine(player1=player1, player2=player2)
 
-    def broadcast(self, data:dict) -> None:
+    def broadcast(self, data: dict) -> None:
         """ Update to every player """
 
         for id, client in self.clients.items():
             try:
-                client.update_user(data) 
+                client.update_user(data)
 
             except Exception as e:
                 print(f"error broadcasting to {id}: {e}")
@@ -117,11 +116,11 @@ class Server():
         """ Handle data from each client """
         try:
             # send player an id
-            print(client.id, type(client.id)) 
-            id_dict = {
-                "id": client.id 
-            }
-            client.client_socket.send((json.dumps(id_dict) + '\n').encode('utf-8'))
+            # print(client.id, type(client.id)) # DEBUG
+            id_dict = {"id": client.id}
+            client.client_socket.send(
+                (json.dumps(id_dict) + '\n').encode('utf-8'))
+
             while True:
                 buffer = b""
 
@@ -152,7 +151,7 @@ class Server():
 
                         player1_input = None
                         player2_input = None
-                        
+
                         if self.user_input.get('id') == 1:
                             player1_input = self.user_input.get('key_pressed')
 
@@ -160,14 +159,15 @@ class Server():
                             player2_input = self.user_input.get('key_pressed')
 
                         self.game_state = self.engine.run(
-                            player1key=key_apply(player1_input), 
-                            player2key=key_apply(player2_input)) # TODO: waiting for Eng
+                            player1key=key_apply(player1_input),
+                            # TODO: waiting for Eng
+                            player2key=key_apply(player2_input))
 
                         # After update, send an update to every players
                         self.broadcast(self.game_state)
 
-                        print(f"Player {client.id}'s data updated")
                         # DEBUG
+                        print(f"Player {client.id}'s data updated")
                         # print(f"Player {client.id}'s data")
                         # print(json_data)
 
