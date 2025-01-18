@@ -2,7 +2,7 @@ import pygame
 import sys
 import requests
 import random
-import math
+
 
 class Graphics:
     SCREEN_WIDTH = 1200
@@ -13,16 +13,16 @@ class Graphics:
     BLACK = (0, 0, 0)
 
     COLORS = [
-        (255, 0, 0),    # Red
-        (0, 255, 0),    # Green
-        (0, 0, 255),    # Blue
+        (255, 0, 0),  # Red
+        (0, 255, 0),  # Green
+        (0, 0, 255),  # Blue
         (255, 255, 0),  # Yellow
         (255, 165, 0),  # Orange
         (128, 0, 128),  # Purple
         (0, 255, 255),  # Cyan
-        (255, 192, 203),# Pink
+        (255, 192, 203),  # Pink
         (128, 128, 0),  # Olive
-        (0, 128, 128)   # Teal
+        (0, 128, 128),  # Teal
     ]
 
     def __init__(self) -> None:
@@ -30,14 +30,17 @@ class Graphics:
         self.screen = pygame.display.set_mode(self.DISPLAY)
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 36)
+        self.waiting_font = pygame.font.Font(None, 72)
         self.players = []
+        self.waiting_for_players = True
 
     def fetch_data(self) -> None:
         try:
-            response = requests.get("http://127.0.0.1:5000/api/players")
+            response = requests.get("http://127.0.0.1:8080/api/players")
             response.raise_for_status()
             data = response.json()
             self.populate_players(data)
+            self.waiting_for_players = False
         except requests.RequestException as e:
             print(f"Error fetching player data: {e}")
             sys.exit()
@@ -74,21 +77,40 @@ class Graphics:
             player["radius"],
         )
         text_surface = self.font.render(player["name"], True, self.WHITE)
-        text_rect = text_surface.get_rect(center=(player["position"][0], player["position"][1]))
+        text_rect = text_surface.get_rect(
+            center=(player["position"][0], player["position"][1])
+        )
         self.screen.blit(text_surface, text_rect)
 
     def draw_scoreboard(self):
         players_sorted = sorted(self.players, key=lambda x: x["score"], reverse=True)
         scoreboard_lines = []
-        
+
         for rank, player in enumerate(players_sorted, start=1):
-            scoreboard_lines.append(f"Rank {rank}: {player['name']} - {player['score']}")
+            scoreboard_lines.append(
+                f"Rank {rank}: {player['name']} - {player['score']}"
+            )
 
         for i, line in enumerate(scoreboard_lines):
             text_surface = self.font.render(line, True, self.BLACK)
-            self.screen.blit(text_surface,
-                             (self.SCREEN_WIDTH - text_surface.get_width() - 20,
-                              20 + i * 30))
+            self.screen.blit(
+                text_surface,
+                (self.SCREEN_WIDTH - text_surface.get_width() - 20, 20 + i * 30),
+            )
+
+    def draw_waiting_screen(self):
+        waiting_text = self.waiting_font.render("Waiting for Players", True, self.BLACK)
+        controls_text = self.font.render("Press Space Bar to Start", True, self.BLACK)
+
+        waiting_rect = waiting_text.get_rect(
+            center=(self.SCREEN_WIDTH // 2, self.SCREEN_HEIGHT // 2 - 20)
+        )
+        controls_rect = controls_text.get_rect(
+            center=(self.SCREEN_WIDTH // 2, self.SCREEN_HEIGHT // 2 + 40)
+        )
+
+        self.screen.blit(waiting_text, waiting_rect)
+        self.screen.blit(controls_text, controls_rect)
 
     def run_graphics(self) -> None:
         running = True
@@ -97,12 +119,15 @@ class Graphics:
                 if event.type == pygame.QUIT:
                     running = False
 
-            self.screen.fill(self.WHITE)
+            if self.waiting_for_players:
+                self.screen.fill(self.BLACK)
+                self.draw_waiting_screen()
+                self.screen.fill(self.BLACK)
 
-            for player in self.players:
-                self.draw_player(player)
+                for player in self.players:
+                    self.draw_player(player)
 
-            self.draw_scoreboard()
+                self.draw_scoreboard()
 
             pygame.display.update()
             self.clock.tick(60)
@@ -114,6 +139,6 @@ class Graphics:
 if __name__ == "__main__":
     graphics_instance = Graphics()
 
-    graphics_instance.fetch_data()   # Fetch data from server
+    graphics_instance.fetch_data()
 
-    graphics_instance.run_graphics()   # Start the graphics loop
+    graphics_instance.run_graphics()
