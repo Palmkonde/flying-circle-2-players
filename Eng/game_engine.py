@@ -1,6 +1,7 @@
 from typing import Tuple, Dict
 import random
 import math
+from pprint import pprint
 
 
 class Circle:
@@ -84,7 +85,7 @@ class PlayerCircle(Circle):
     def get_status(self) -> Dict:
         return {
             'center': (self.x, self.y),
-            'direction': (self.head_vector[0], self.head_vector[1]),
+            'direction': (self.arrow_head[0], self.arrow_head[1]),
             'score': self.score
         }
 
@@ -110,11 +111,7 @@ class Medal:
         return 0
 
     def get_status(self) -> Dict:
-        return {
-            'id': self.id,
-            'position': (self.x, self.y),
-            'is_collected': not self.alive
-        }
+        return (self.x, self.y)
 
 
 class GameEngine:
@@ -260,8 +257,9 @@ if __name__ == "__main__":
         game_state = engine.run(player1key=player1key, player2key=player2key)
 
         # Output only the state information
-        if 'state' in game_state:
-            print(f"('state': {game_state['state']})")
+        pprint(game_state)
+        # if 'state' in game_state:
+        #     print(f"('state': {game_state['state']})")
 
     # Optionally, print the final scores for verification
     print(f"Player 1 Final Score: {player1.score}")
