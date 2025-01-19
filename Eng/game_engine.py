@@ -77,13 +77,14 @@ class PlayerCircle(Circle):
             other.velocity_vector[1] *= -1
             other.move()
 
-    def control(self, bound: list[int, int], other: Circle, key: Tuple[bool, bool, bool], thrust_mod=1, steer_mod=1) -> None:
-        if key[0]:
-            self.thrust(thrust_mod)
-        if key[1]:
-            self.steer(steer_mod)
-        if key[2]:
-            self.steer(-steer_mod)
+    def control(self, bound: list[int, int], other: Circle, key: Tuple[bool, bool, bool], thrust_mod=1, steer_mod=1, lock=False) -> None:
+        if not lock:
+            if key[0]:
+                self.thrust(thrust_mod)
+            if key[1]:
+                self.steer(steer_mod)
+            if key[2]:
+                self.steer(-steer_mod)
         self.move()
         self.resist_movement(magnitude=0.8, cap=100)
         self.bounce_edge(bound)
@@ -137,41 +138,29 @@ class GameEngine:
 
         self.player1ready, self.player2ready = False, False
 
-    def start_game(self):
-        self.state = 1
+    def game_state0(self, player1key, player2key):
+        if player1key == (True, True, True):
+            self.player1ready = True
+        if player2key == (True, True, True):
+            self.player2ready = True
+            
+        print(f"Now player 1 is {self.player1ready}")
 
-    def end_game(self):
-        self.state = 2
+        # Transition to state 1 if both players are ready
+        if self.player1ready and self.player2ready:
+            self.state = 1  # Change state to "Playing"
+            self.player1ready, self.player2ready = False, False  # Reset readiness state
 
-    def run(self, player1key, player2key, medals: int = 10, respawn=True, safe_spawn=100):
-        # If both players are in the "Waiting" state and either one of them has given input, start the game
-        if self.state == 0:
-            print(f"On engine run we got {player1key} {player2key}")
+    def game_state1(self, player1key, player2key, medals: int = 10, respawn=True, safe_spawn=100):
 
-            if player1key == (True, True, True):
-                self.player1ready = True
-            if player2key == (True, True, True):
-                self.player2ready = True
-                
-            print(f"Now player 1 is {self.player1ready}")
+        # Transition to state 2 if either player presses (True, False, True)
+        if player1key == (True, False, True) or player2key == (True, False, True):
+            self.state = 2
 
-            # Transition to state 1 if both players are ready
-            if self.player1ready and self.player2ready:
-                self.start_game()  # Change state to "Playing"
-                self.player1ready, self.player2ready = False, False  # Reset readiness state
+            self.player1.velocity_vector = [0, 0]
+            self.player2.velocity_vector = [0, 0]
 
-        elif self.state == 1:
-            # Transition to state 2 if either player presses (True, False, True)
-            if player1key == (True, False, True) or player2key == (True, False, True):
-                self.end_game()
 
-        elif self.state == 2:
-            # Transition to state 0 if both players press (True, True, True)
-            if player1key == (True, True, True) or player2key == (True, True, True):
-                self.state = 0
-
-        # Initialize medals list
-        
         for i in range(medals - len(self.medals_list)):
             while True:
                 spawn_x = random.randint(100, self.screen[0] - 100)
@@ -203,7 +192,26 @@ class GameEngine:
                     self.player2, new_center=(spawn_x, spawn_y))
                 self.player2.score += score
 
-        # Collect current state data to return
+
+    def game_state2(self, player1key, player2key):
+        if player1key == (True, False, True) or player2key == (True, False, True):
+            self.state = 0
+        
+
+    def run(self, player1key, player2key, medals: int = 10, respawn=True, safe_spawn=100):
+        
+        if self.state == 0:
+            self.game_state0(player1key=player1key, player2key=player2key)
+        elif self.state == 1:
+            self.game_state1(player1key=player1key, player2key=player2key, \
+                             medals=medals, respawn=respawn, safe_spawn=safe_spawn)
+        elif self.state == 2:
+            self.game_state2(player1key=player1key, player2key=player2key)
+
+    def update_data(self) -> dict:
+        self.player1.control(self.screen, self.player2, (False, False, False))
+        self.player2.control(self.screen, self.player1, (False, False, False))
+        
         self.data = {
             "state": self.state,
             "coin_position": [medal.get_status() for medal in self.medals_list],
@@ -218,9 +226,7 @@ class GameEngine:
                 }
             ]
         }
-
-    def update_data(self) -> dict:
-        
+    
         return self.data
 
 
