@@ -121,11 +121,11 @@ class Server():
                         continue
 
                     # TODO: waiting for eng
-                    with self.lock:
-                        self.game_state = self.engine.update()
+                    # with self.lock:
 
                     try:
                         client.update_user(self.game_state)
+                        self.game_state = self.engine.update_data()
 
                     except Exception as e:
                         print(f"error broadcasting to {id}: {e}")
@@ -186,10 +186,10 @@ class Server():
                         elif self.user_input.get('id') == 2:
                             player2_input = self.user_input.get('key_pressed')
 
+                        self.engine.run(player1key=key_apply(player1_input), player2key=key_apply(player2_input))
+
                         with self.lock:
-                            self.game_state = self.engine.run(
-                                player1key=key_apply(player1_input),
-                                player2key=key_apply(player2_input))
+                            self.game_state = self.engine.update_data()
 
                         # DEBUG
                         print(f"Player {client.id}'s data updated")
