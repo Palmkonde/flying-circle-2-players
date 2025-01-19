@@ -4,13 +4,8 @@ import math
 from pprint import pprint
 
 
-"""
-To do list
 
-    fix arrow_head
-    make player stay still at stage 0, 2
-    make GameEngine.update_data() update game data
-"""
+
 
 class Circle:
     def __init__(self, center: Tuple[float, float], radius: int, id: int, direction: float) -> None:
@@ -45,7 +40,7 @@ class Circle:
         return {
             'center': (self.x, self.y),
             'direction': (self.head_vector[0], self.head_vector[1]),
-            'score': 0  # Placeholder, score will be handled by the PlayerCircle class
+            'score': 0  
         }
 
 
@@ -72,12 +67,6 @@ class PlayerCircle(Circle):
         if distance < sum_radius:
             self.velocity_vector[0], other.velocity_vector[0] = other.velocity_vector[0], self.velocity_vector[0]
             self.velocity_vector[1], other.velocity_vector[1] = other.velocity_vector[1], self.velocity_vector[1]
-            # self.velocity_vector[0] *= -1
-            # self.velocity_vector[1] *= -1
-            # self.move()
-            # other.velocity_vector[0] *= -1
-            # other.velocity_vector[1] *= -1
-            # other.move()
 
     def control(self, bound: list[int, int], other: Circle, key: Tuple[bool, bool, bool], thrust_mod=1, steer_mod=1, lock=False) -> None:
         if not lock:
@@ -131,7 +120,7 @@ class GameEngine:
         self.player2 = player2
         self.screen = screen
         self.medals_list = []
-        self.state = 0  # Game starts in a waiting state
+        self.state = 0
         self.data = {
             "state": 0,
             "players": [],
@@ -148,14 +137,12 @@ class GameEngine:
             
         print(f"Now player 1 is {self.player1ready}")
 
-        # Transition to state 1 if both players are ready
         if self.player1ready and self.player2ready:
-            self.state = 1  # Change state to "Playing"
-            self.player1ready, self.player2ready = False, False  # Reset readiness state
+            self.state = 1
+            self.player1ready, self.player2ready = False, False
 
     def game_state1(self, player1key, player2key, medals: int = 10, respawn=True, safe_spawn=100):
 
-        # Transition to state 2 if either player presses (True, False, True)
         if player1key == (True, False, True) or player2key == (True, False, True):
             self.state = 2
 
@@ -172,14 +159,11 @@ class GameEngine:
                     break
             self.medals_list.append(Medal(center=(spawn_x, spawn_y), id=i, respawn=respawn))
 
-        # Process the controls and actions for each player
         self.player1.control(self.screen, self.player2, player1key, steer_mod=30)
         self.player2.control(self.screen, self.player1, player2key, steer_mod=30)
 
-        # Handle coin collection
         for medal in self.medals_list:
             if medal.alive:
-                # Check for medal collection
                 while True:
                     spawn_x = random.randint(100, self.screen[0] - 100)
                     spawn_y = random.randint(100, self.screen[1] - 100)
@@ -232,7 +216,7 @@ class GameEngine:
 
 
 
-# Real-time keyboard input handling with pynput (without creating a screen)
+
 def key_apply(client_data: dict) -> Tuple[bool, bool, bool]:
     key = (False, False, False)
     keys = {
@@ -244,10 +228,11 @@ def key_apply(client_data: dict) -> Tuple[bool, bool, bool]:
     }
     if isinstance(client_data, dict):
         key = client_data['key_pressed']
-    if isinstance(client_data, str):
-        key = client_data
 
     return keys.get(key, (False, False, False))
+
+
+
 
 
 # Test key input simulation
@@ -283,20 +268,14 @@ if __name__ == "__main__":
         player2key = key_apply(player2_key)
 
         # Run the game engine with the current keys
-        game_state = engine.run(player1key=player1key, player2key=player2key)
+        engine.run(player1key=player1key, player2key=player2key)
+        game_state = engine.update_data()
 
         # Output only the state information
         pprint(game_state)
-        # if 'state' in game_state:
-        #     print(f"('state': {game_state['state']})")
+
 
     # Optionally, print the final scores for verification
     print(f"Player 1 Final Score: {player1.score}")
     print(f"Player 2 Final Score: {player2.score}")
 
-    # client_input = {
-    #                 'id': 1,
-    #                 'key_pressed': '.'
-    #                 }
-
-    # print(key_apply(client_input))
