@@ -4,6 +4,14 @@ import math
 from pprint import pprint
 
 
+"""
+To do list
+
+    fix arrow_head
+    make player stay still at stage 0, 2
+    make GameEngine.update_data() update game data
+"""
+
 class Circle:
     def __init__(self, center: Tuple[float, float], radius: int, id: int, direction: float) -> None:
         self.x = center[0]
@@ -212,6 +220,7 @@ class GameEngine:
         }
 
     def update_data(self) -> dict:
+        
         return self.data
         
 
