@@ -55,6 +55,7 @@ import threading
 from math import pi
 import time
 from Eng.game_engine import GameEngine, PlayerCircle, key_apply
+import queue
 
 
 # DEBUG Tool
@@ -90,7 +91,7 @@ class Server():
 
     def __init__(self) -> None:
         self.clients = {}
-        self.user_input = {}
+        self.input_queue = queue.Queue()
         self.game_state = {
             "state": 0,
             "players": [],
@@ -106,11 +107,29 @@ class Server():
 
         self.engine = GameEngine(player1=player1, player2=player2, screen=SCREEN)
 
-    def broadcast(self, data=None) -> None:
+    def broadcast(self) -> None:
         """ Update to every player """
 
         while True:
             with self.lock:
+                
+                while not self.input_queue.empty():
+                    user_input = self.input_queue.get()
+                                        
+                    # something change here
+                    player1_input = None
+                    player2_input = None
+
+                    if user_input.get('id') == 1:
+                        player1_input = self.user_input.get('key_pressed')
+
+                    elif user_input.get('id') == 2:
+                        player2_input = user_input.get('key_pressed')
+
+                    self.engine.run(player1key=key_apply(player1_input), player2key=key_apply(player2_input))
+                
+                self.game_state = self.engine.update_data()
+
                 for id in list(self.clients.keys()):
                     client = self.clients.get(id)  # Safely get the client object
                     if not client:
@@ -119,13 +138,9 @@ class Server():
                     # Wait untill player got an ID
                     if not client.ready_event.is_set():
                         continue
-
-                    # TODO: waiting for eng
-                    # with self.lock:
-
+                    
                     try:
                         client.update_user(self.game_state)
-                        self.game_state = self.engine.update_data()
 
                     except Exception as e:
                         print(f"error broadcasting to {id}: {e}")
@@ -174,22 +189,7 @@ class Server():
                         # client.client_socket.send("Data recieved".encode()) # DEBUG
 
                         json_data = json.loads(buffer.strip())
-                        self.user_input = json_data
-
-                        # something change here
-                        player1_input = None
-                        player2_input = None
-
-                        if self.user_input.get('id') == 1:
-                            player1_input = self.user_input.get('key_pressed')
-
-                        elif self.user_input.get('id') == 2:
-                            player2_input = self.user_input.get('key_pressed')
-
-                        self.engine.run(player1key=key_apply(player1_input), player2key=key_apply(player2_input))
-
-                        with self.lock:
-                            self.game_state = self.engine.update_data()
+                        self.input_queue.put(json_data) 
 
                         # DEBUG
                         print(f"Player {client.id}'s data updated")
