@@ -53,7 +53,6 @@ import socket
 import json
 import threading
 from math import pi
-import time
 from Eng.game_engine import GameEngine, PlayerCircle, key_apply
 import queue
 
@@ -113,10 +112,10 @@ class Server():
         while True:
             with self.lock:
                 
+                # get user_input from queue
                 while not self.input_queue.empty():
                     user_input = self.input_queue.get()
                                         
-                    # something change here
                     player1_input = None
                     player2_input = None
 
@@ -128,7 +127,7 @@ class Server():
 
                     self.engine.run(player1key=key_apply(player1_input), player2key=key_apply(player2_input))
                 
-                self.game_state = self.engine.update_data()
+                self.game_state = self.engine.update_data() # Update game_state
 
                 for id in list(self.clients.keys()):
                     client = self.clients.get(id)  # Safely get the client object
@@ -155,13 +154,11 @@ class Server():
         """ Handle data from each client """
         try:
             # send player an id
-            # print(client.id, type(client.id)) # DEBUG
             id_dict = {"id": client.id}
             client.client_socket.send(
                 (json.dumps(id_dict) + '\n').encode('utf-8'))
             
-            # Signal to be ready
-            client.ready_event.set()
+            client.ready_event.set() # Send signal to be ready 
 
             while True:
                 buffer = b""
@@ -177,7 +174,6 @@ class Server():
                         if buffer.endswith(b'\n'):
                             break
                     else:
-                        # disconnected
                         print(f"{client.id} has disconnected")
                         raise ConnectionError
 
@@ -189,7 +185,7 @@ class Server():
                         # client.client_socket.send("Data recieved".encode()) # DEBUG
 
                         json_data = json.loads(buffer.strip())
-                        self.input_queue.put(json_data) 
+                        self.input_queue.put(json_data) # put user input to queue
 
                         # DEBUG
                         print(f"Player {client.id}'s data updated")

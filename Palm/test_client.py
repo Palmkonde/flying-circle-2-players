@@ -2,7 +2,6 @@ import socket
 import threading
 import json
 import pygame
-# from Arm.graphic import Graphics
 from Arm.graphic2 import Graphics
 
 # DEBUG
@@ -11,11 +10,12 @@ from pprint import pprint
 HOST = '127.0.0.1'
 PORT = 5505
 
+# states 
 connecting_status = True
 is_first_join = True
 game = None 
 share_data = {}
-ready_get_it = threading.Event()
+ready_get_id = threading.Event()
 
 pygame.init()
 
@@ -60,28 +60,13 @@ def receive_data(sock: socket.socket) -> None:
     
     buffer = bytearray()
     try:
-        # while connecting_status:
-        #     chunk = sock.recv(64)
-        #     if not chunk:
-        #         raise ConnectionError("Server disconnected")
-        #     buffer.extend(chunk)
-        #     while b'\n' in buffer:
-        #         message = buffer[:buffer.index(b'\n')]
-        #         buffer = buffer[buffer.index(b'\n') + 1:]
-                
-        #         try:
-        #             data = json.loads(message)
-        #             share_data = data
-        #         except json.JSONDecodeError as e:
-        #             print(f"Invalid JSON received: {e}")
         # receiving messages
         while connecting_status:
             message_received = b""
             while True:
                 buffer = sock.recv(32)
                 if buffer:
-                    # print('received data chunk from server: ',
-                    #         repr(buffer))  # DEBUG 
+                    # print('received data chunk from server: ', repr(buffer))  # DEBUG 
                     message_received += buffer
                     if message_received.endswith(b"\n"):
                         break
@@ -107,10 +92,10 @@ def receive_data(sock: socket.socket) -> None:
                         try:
                             share_data.update(json_data)
 
-                            print(f"this is share data in client: {share_data}")
-                            if ready_get_it.is_set():
+                            # print(f"this is share data in client: {share_data}") # DEBUG
+                            if ready_get_id.is_set():
                                 continue
-                            ready_get_it.set()
+                            ready_get_id.set()
                         except Exception as e:
                             print(f"Error updating data: {e}")
 
@@ -130,7 +115,7 @@ def run_game() -> None:
     global share_data, game
 
     # Wait for initial data
-    while not ready_get_it.is_set():
+    while not ready_get_id.is_set():
         print("Waiting for data...")
 
     # Graphics instance
