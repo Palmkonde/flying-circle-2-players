@@ -52,12 +52,12 @@ class PlayerCircle(Circle):
     def __init__(self, center, radius, id, direction):
         super().__init__(center, radius, id, direction)
         self.score = 0
-        self.arrow_head = [self.x + (self.head_vector[0] * self.radius),
-                           self.y + (self.head_vector[1] * self.radius)]
+        self.arrow_head = (self.x + (self.head_vector[0] * self.radius),
+                           self.y + (self.head_vector[1] * self.radius))
 
     def get_arrow(self):
-        self.arrow_head = [self.x + (self.head_vector[0] * self.radius),
-                           self.y + (self.head_vector[1] * self.radius)]
+        self.arrow_head = (self.x + (self.head_vector[0] * self.radius),
+                           self.y + (self.head_vector[1] * self.radius))
 
     def bounce_edge(self, bound: Tuple[int, int]) -> None:
         if self.x < 0 or self.x > bound[0]:
@@ -67,7 +67,7 @@ class PlayerCircle(Circle):
 
     def collision(self, other: Circle) -> None:
         distance = math.dist((self.x, self.y), (other.x, other.y))
-        sum_radius = self.radius + other.radius + 3
+        sum_radius = self.radius + other.radius + 5
         if distance < sum_radius:
             self.velocity_vector[0] *= -1
             self.velocity_vector[1] *= -1
@@ -81,14 +81,14 @@ class PlayerCircle(Circle):
             if key[0]:
                 self.thrust(thrust_mod)
             if key[1]:
-                self.steer(steer_mod)
+                self.steer(steer_mod * math.pi/360)
             if key[2]:
-                self.steer(-steer_mod)
-        self.move()
+                self.steer(-steer_mod * math.pi/360)
         self.resist_movement(cap=20)
         self.bounce_edge(bound)
         self.collision(other)
         self.get_arrow()
+        self.move
 
     def get_status(self) -> Dict:
         return {
@@ -171,8 +171,8 @@ class GameEngine:
                 100, 700), random.randint(100, 500)), id=i, respawn=respawn))
 
         # Process the controls and actions for each player
-        self.player1.control(self.screen, self.player2, player1key)
-        self.player2.control(self.screen, self.player1, player2key)
+        self.player1.control(self.screen, self.player2, player1key, steer_mod=5)
+        self.player2.control(self.screen, self.player1, player2key, steer_mod=5)
 
         # Handle coin collection
         for medal in self.medals_list:
