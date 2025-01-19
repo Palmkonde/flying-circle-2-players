@@ -106,7 +106,7 @@ class Server():
 
         self.engine = GameEngine(player1=player1, player2=player2, screen=SCREEN)
 
-    def broadcast(self) -> None:
+    def broadcast(self, data=None) -> None:
         """ Update to every player """
 
         while True:
@@ -119,6 +119,10 @@ class Server():
                     # Wait untill player got an ID
                     if not client.ready_event.is_set():
                         continue
+
+                    # TODO: waiting for eng
+                    with self.lock:
+                        self.game_state = self.engine.update()
 
                     try:
                         client.update_user(self.game_state)
@@ -182,9 +186,10 @@ class Server():
                         elif self.user_input.get('id') == 2:
                             player2_input = self.user_input.get('key_pressed')
 
-                        self.game_state = self.engine.run(
-                            player1key=key_apply(player1_input),
-                            player2key=key_apply(player2_input))
+                        with self.lock:
+                            self.game_state = self.engine.run(
+                                player1key=key_apply(player1_input),
+                                player2key=key_apply(player2_input))
 
                         # DEBUG
                         print(f"Player {client.id}'s data updated")

@@ -206,6 +206,23 @@ class GameEngine:
         }
         return game_state
 
+    def update(self) -> Dict:
+        game_state = {
+                "state": self.state,
+                "coin_position": [medal.get_status() for medal in self.medals_list],
+                "players": [
+                    {
+                        "id": 1,
+                        "player": self.player1.get_status()
+                    },
+                    {
+                        "id": 2,
+                        "player": self.player2.get_status()
+                    }
+                ]
+            }
+        return game_state
+
 
 # Real-time keyboard input handling with pynput (without creating a screen)
 def key_apply(client_data: dict) -> Tuple[bool, bool, bool]:
