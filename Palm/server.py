@@ -121,7 +121,7 @@ class Server():
                     player2_input = None
 
                     if user_input.get('id') == 1:
-                        player1_input = self.user_input.get('key_pressed')
+                        player1_input = user_input.get('key_pressed')
 
                     elif user_input.get('id') == 2:
                         player2_input = user_input.get('key_pressed')
