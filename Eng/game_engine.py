@@ -121,6 +121,7 @@ class GameEngine:
         self.screen = screen
         self.medals_list = []
         self.state = 0  # Game starts in a waiting state
+        self.data = dict()
 
         self.player1ready, self.player2ready = False, False
 
@@ -130,7 +131,7 @@ class GameEngine:
     def end_game(self):
         self.state = 2
 
-    def run(self, player1key, player2key, medals: int = 10, respawn=True, safe_spawn=100) -> Dict:
+    def run(self, player1key, player2key, medals: int = 10, respawn=True, safe_spawn=100):
         # If both players are in the "Waiting" state and either one of them has given input, start the game
         if self.state == 0:
             print(f"On engine run we got {player1key} {player2key}")
@@ -190,7 +191,7 @@ class GameEngine:
                 self.player2.score += score
 
         # Collect current state data to return
-        game_state = {
+        self.data = {
             "state": self.state,
             "coin_position": [medal.get_status() for medal in self.medals_list],
             "players": [
@@ -204,7 +205,10 @@ class GameEngine:
                 }
             ]
         }
-        return game_state
+
+    def update_data(self) -> dict:
+        return self.data
+        
 
     def update(self) -> Dict:
         game_state = {
