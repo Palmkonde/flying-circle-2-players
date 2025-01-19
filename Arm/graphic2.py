@@ -105,7 +105,7 @@ class Graphics:
             )
 
     def draw_waiting_screen(self):
-        print(f"Data on draw wating screen: {self.data}")
+        # print(f"Data on draw wating screen: {self.data}")
         if self.data.get("state") == 0:
             waiting_font = pygame.font.Font(None, 72)
             waiting_text = waiting_font.render("Waiting for Players", True, self.WHITE)
@@ -135,7 +135,6 @@ class Graphics:
 
 
             self.draw_waiting_screen()
-
             self.draw_player()
             self.draw_coin()
 

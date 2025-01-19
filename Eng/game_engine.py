@@ -222,7 +222,7 @@ class GameEngine:
     def update_data(self) -> dict:
         
         return self.data
-        
+
 
 
 # Real-time keyboard input handling with pynput (without creating a screen)

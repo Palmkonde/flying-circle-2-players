@@ -53,7 +53,9 @@ import socket
 import json
 import threading
 from math import pi
+import time
 from Eng.game_engine import GameEngine, PlayerCircle, key_apply
+import queue
 
 
 # DEBUG Tool
@@ -73,6 +75,7 @@ class Client:
     def __init__(self, client_socket: socket.socket, id: str) -> None:
         self.client_socket = client_socket
         self.id = id
+        self.ready_event = threading.Event()
 
     def update_user(self, data: dict) -> None:
         try:
@@ -88,10 +91,14 @@ class Server():
 
     def __init__(self) -> None:
         self.clients = {}
-        self.user_input = {}
+        self.input_queue = queue.Queue()
         self.game_state = {
-            "state": 0
+            "state": 0,
+            "players": [],
+            "coin_position": []
         } 
+        
+        self.lock = threading.Lock()
 
         player1 = PlayerCircle(id=1, center=PLAYER1_CENTER,
                                radius=PLAYER_RADIUS, direction=0)
@@ -102,21 +109,47 @@ class Server():
 
     def broadcast(self) -> None:
         """ Update to every player """
+
         while True:
-            for id in list(self.clients.keys()):
-                client = self.clients.get(id)  # Safely get the client object
-                if not client:
-                    continue
-                try:
-                    client.update_user(self.game_state)
+            with self.lock:
+                
+                while not self.input_queue.empty():
+                    user_input = self.input_queue.get()
+                                        
+                    # something change here
+                    player1_input = None
+                    player2_input = None
 
-                except Exception as e:
-                    print(f"error broadcasting to {id}: {e}")
+                    if user_input.get('id') == 1:
+                        player1_input = user_input.get('key_pressed')
 
-                    # Handle if client not appear in clients
-                    if id in self.clients:
-                        self.clients.pop(id)
-                        client.client_socket.close()
+                    elif user_input.get('id') == 2:
+                        player2_input = user_input.get('key_pressed')
+
+                    self.engine.run(player1key=key_apply(player1_input), player2key=key_apply(player2_input))
+                
+                self.game_state = self.engine.update_data()
+
+                for id in list(self.clients.keys()):
+                    client = self.clients.get(id)  # Safely get the client object
+                    if not client:
+                        continue
+                    
+                    # Wait untill player got an ID
+                    if not client.ready_event.is_set():
+                        continue
+                    
+                    try:
+                        client.update_user(self.game_state)
+
+                    except Exception as e:
+                        print(f"error broadcasting to {id}: {e}")
+
+                        # Handle if client not appear in clients
+                        if id in self.clients:
+                            self.clients.pop(id)
+                            client.client_socket.close()
+            threading.Event().wait(0.016)
 
     def handle_client(self, client: Client) -> None:
         """ Handle data from each client """
@@ -126,6 +159,9 @@ class Server():
             id_dict = {"id": client.id}
             client.client_socket.send(
                 (json.dumps(id_dict) + '\n').encode('utf-8'))
+            
+            # Signal to be ready
+            client.ready_event.set()
 
             while True:
                 buffer = b""
@@ -153,21 +189,7 @@ class Server():
                         # client.client_socket.send("Data recieved".encode()) # DEBUG
 
                         json_data = json.loads(buffer.strip())
-                        self.user_input = json_data
-
-                        # something change here
-                        player1_input = None
-                        player2_input = None
-
-                        if self.user_input.get('id') == 1:
-                            player1_input = self.user_input.get('key_pressed')
-
-                        elif self.user_input.get('id') == 2:
-                            player2_input = self.user_input.get('key_pressed')
-
-                        self.game_state = self.engine.run(
-                            player1key=key_apply(player1_input),
-                            player2key=key_apply(player2_input))
+                        self.input_queue.put(json_data) 
 
                         # DEBUG
                         print(f"Player {client.id}'s data updated")
@@ -181,9 +203,10 @@ class Server():
 
         finally:
             # clear and remove everything
-            if client.id in self.clients:
-                self.clients.pop(client.id)
-            client.client_socket.close()
+            with self.lock:
+                if client.id in self.clients:
+                    self.clients.pop(client.id)
+                client.client_socket.close()
 
     def run_server(self) -> None:
         """ run main server """
