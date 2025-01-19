@@ -19,11 +19,12 @@ class Circle:
         self.radius = radius
         self.id = id
         self.velocity_vector = [0, 0]
-        self.head_vector = [math.cos(direction), math.sin(direction)]
+        self.direction = direction
+        self.head_vector = [math.cos(self.direction), math.sin(self.direction)]
 
     def steer(self, shift: float = math.pi / 180) -> None:
-        self.head_vector[0] += math.cos(shift)
-        self.head_vector[1] += math.sin(shift)
+        self.direction += shift
+        self.head_vector = [math.cos(self.direction), math.sin(self.direction)]
 
     def thrust(self, magnitude: int) -> None:
         self.velocity_vector[0] += self.head_vector[0] * magnitude
@@ -61,30 +62,32 @@ class PlayerCircle(Circle):
 
     def bounce_edge(self, bound: Tuple[int, int]) -> None:
         if self.x < 0 or self.x > bound[0]:
-            self.velocity_vector[0] *= -1
+            self.velocity_vector[0] *= -0.8
         if self.y < 0 or self.y > bound[1]:
-            self.velocity_vector[1] *= -1
+            self.velocity_vector[1] *= -0.8
 
     def collision(self, other: Circle) -> None:
         distance = math.dist((self.x, self.y), (other.x, other.y))
-        sum_radius = self.radius + other.radius + 5
+        sum_radius = self.radius + other.radius -5
         if distance < sum_radius:
-            self.velocity_vector[0] *= -1
-            self.velocity_vector[1] *= -1
-            self.move()
-            other.velocity_vector[0] *= -1
-            other.velocity_vector[1] *= -1
-            other.move()
+            self.velocity_vector[0], other.velocity_vector[0] = other.velocity_vector[0], self.velocity_vector[0]
+            self.velocity_vector[1], other.velocity_vector[1] = other.velocity_vector[1], self.velocity_vector[1]
+            # self.velocity_vector[0] *= -1
+            # self.velocity_vector[1] *= -1
+            # self.move()
+            # other.velocity_vector[0] *= -1
+            # other.velocity_vector[1] *= -1
+            # other.move()
 
     def control(self, bound: list[int, int], other: Circle, key: Tuple[bool, bool, bool], thrust_mod=1, steer_mod=1, lock=False) -> None:
         if not lock:
             if key[0]:
                 self.thrust(thrust_mod)
             if key[1]:
-                self.steer(steer_mod * math.pi/360)
-            if key[2]:
                 self.steer(-steer_mod * math.pi/360)
-        self.resist_movement(cap=20)
+            if key[2]:
+                self.steer(steer_mod * math.pi/360)
+        self.resist_movement(cap=5)
         self.bounce_edge(bound)
         self.collision(other)
         self.get_arrow()
@@ -109,7 +112,7 @@ class Medal:
 
     def get_medal(self, other: Circle, new_center: Tuple[int, int]) -> None:
         distance = math.dist((self.x, self.y), (other.x, other.y))
-        if distance < other.radius:
+        if distance < other.radius + 5:
             if self.respawn:
                 self.x, self.y = new_center
             else:
@@ -167,12 +170,11 @@ class GameEngine:
                 if math.dist((self.player1.x, self.player1.y), (spawn_x, spawn_y)) > safe_spawn \
                         and math.dist((self.player2.x, self.player2.y), (spawn_x, spawn_y)) > safe_spawn:
                     break
-            self.medals_list.append(Medal(center=(random.randint(
-                100, 700), random.randint(100, 500)), id=i, respawn=respawn))
+            self.medals_list.append(Medal(center=(spawn_x, spawn_y), id=i, respawn=respawn))
 
         # Process the controls and actions for each player
-        self.player1.control(self.screen, self.player2, player1key, steer_mod=5)
-        self.player2.control(self.screen, self.player1, player2key, steer_mod=5)
+        self.player1.control(self.screen, self.player2, player1key, steer_mod=30)
+        self.player2.control(self.screen, self.player1, player2key, steer_mod=30)
 
         # Handle coin collection
         for medal in self.medals_list:

@@ -55,7 +55,7 @@ class Graphics:
             for player in self.data.get("players"):
                 pygame.draw.circle(surface=self.screen, color=self.COLORS[player["id"] - 1],
                                    center=player["player"]["center"], radius=self.player_radius)
-                pygame.draw.line(surface=self.screen, color=self.WHITE,
+                pygame.draw.line(surface=self.screen, color=self.BLACK, width=10,
                                  start_pos=player["player"]["center"], end_pos=player["player"]["direction"])
 
         # pygame.draw.circle(self.screen, player['color'], (
