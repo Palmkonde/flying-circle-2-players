@@ -33,12 +33,11 @@ class Circle:
         self.x += self.velocity_vector[0]
         self.y += self.velocity_vector[1]
 
-    def resist_movement(self, magnitude: float = 0.98, cap: float = 40) -> None:
-        speed = math.dist(
-            (0, 0), (self.velocity_vector[0], self.velocity_vector[1]))
+    def resist_movement(self, magnitude: float = 0.98, cap: float = 100) -> None:
+        speed = math.dist((0, 0), (self.velocity_vector[0], self.velocity_vector[1]))
         if speed > cap:
-            self.velocity_vector[0] *= magnitude
-            self.velocity_vector[1] *= magnitude
+            self.velocity_vector[0] = self.velocity_vector[0] / speed * cap
+            self.velocity_vector[1] = self.velocity_vector[1] / speed * cap
         self.move()
 
     def get_status(self) -> Dict:
@@ -86,7 +85,7 @@ class PlayerCircle(Circle):
             if key[2]:
                 self.steer(-steer_mod)
         self.move()
-        self.resist_movement(magnitude=0.8, cap=100)
+        self.resist_movement(cap=20)
         self.bounce_edge(bound)
         self.collision(other)
         self.get_arrow()
