@@ -112,7 +112,7 @@ def receive_data(sock: socket.socket) -> None:
         print("Existing Client...")
 
 def run_game() -> None:
-    global share_data, game
+    global share_data
 
     # Wait for initial data
     while not ready_get_id.is_set():

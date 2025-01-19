@@ -228,6 +228,9 @@ def key_apply(client_data: dict) -> Tuple[bool, bool, bool]:
     }
     if isinstance(client_data, dict):
         key = client_data['key_pressed']
+        
+    if isinstance(client_data, str):
+        key = client_data
 
     return keys.get(key, (False, False, False))
 
