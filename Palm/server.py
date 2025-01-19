@@ -53,6 +53,7 @@ import socket
 import json
 import threading
 from math import pi
+import time
 from Eng.game_engine import GameEngine, PlayerCircle, key_apply
 
 
@@ -73,6 +74,7 @@ class Client:
     def __init__(self, client_socket: socket.socket, id: str) -> None:
         self.client_socket = client_socket
         self.id = id
+        self.ready_event = threading.Event()
 
     def update_user(self, data: dict) -> None:
         try:
@@ -90,8 +92,12 @@ class Server():
         self.clients = {}
         self.user_input = {}
         self.game_state = {
-            "state": 0
+            "state": 0,
+            "players": [],
+            "coin_position": []
         } 
+        
+        self.lock = threading.Lock()
 
         player1 = PlayerCircle(id=1, center=PLAYER1_CENTER,
                                radius=PLAYER_RADIUS, direction=0)
@@ -102,21 +108,29 @@ class Server():
 
     def broadcast(self) -> None:
         """ Update to every player """
+
         while True:
-            for id in list(self.clients.keys()):
-                client = self.clients.get(id)  # Safely get the client object
-                if not client:
-                    continue
-                try:
-                    client.update_user(self.game_state)
+            with self.lock:
+                for id in list(self.clients.keys()):
+                    client = self.clients.get(id)  # Safely get the client object
+                    if not client:
+                        continue
+                    
+                    # Wait untill player got an ID
+                    if not client.ready_event.is_set():
+                        continue
 
-                except Exception as e:
-                    print(f"error broadcasting to {id}: {e}")
+                    try:
+                        client.update_user(self.game_state)
 
-                    # Handle if client not appear in clients
-                    if id in self.clients:
-                        self.clients.pop(id)
-                        client.client_socket.close()
+                    except Exception as e:
+                        print(f"error broadcasting to {id}: {e}")
+
+                        # Handle if client not appear in clients
+                        if id in self.clients:
+                            self.clients.pop(id)
+                            client.client_socket.close()
+            threading.Event().wait(0.016)
 
     def handle_client(self, client: Client) -> None:
         """ Handle data from each client """
@@ -126,6 +140,9 @@ class Server():
             id_dict = {"id": client.id}
             client.client_socket.send(
                 (json.dumps(id_dict) + '\n').encode('utf-8'))
+            
+            # Signal to be ready
+            client.ready_event.set()
 
             while True:
                 buffer = b""
@@ -181,9 +198,10 @@ class Server():
 
         finally:
             # clear and remove everything
-            if client.id in self.clients:
-                self.clients.pop(client.id)
-            client.client_socket.close()
+            with self.lock:
+                if client.id in self.clients:
+                    self.clients.pop(client.id)
+                client.client_socket.close()
 
     def run_server(self) -> None:
         """ run main server """

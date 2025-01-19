@@ -2,7 +2,6 @@ import socket
 import threading
 import json
 import pygame
-import time
 # from Arm.graphic import Graphics
 from Arm.graphic2 import Graphics
 
@@ -16,6 +15,7 @@ connecting_status = True
 is_first_join = True
 game = None 
 share_data = {}
+ready_get_it = threading.Event()
 
 pygame.init()
 
@@ -58,7 +58,23 @@ def send_message(server_socket: socket.socket) -> None:
 
 def receive_data(sock: socket.socket) -> None:
     global game, connecting_status, is_first_join, share_data
+    
+    buffer = bytearray()
     try:
+        # while connecting_status:
+        #     chunk = sock.recv(64)
+        #     if not chunk:
+        #         raise ConnectionError("Server disconnected")
+        #     buffer.extend(chunk)
+        #     while b'\n' in buffer:
+        #         message = buffer[:buffer.index(b'\n')]
+        #         buffer = buffer[buffer.index(b'\n') + 1:]
+                
+        #         try:
+        #             data = json.loads(message)
+        #             share_data = data
+        #         except json.JSONDecodeError as e:
+        #             print(f"Invalid JSON received: {e}")
         # receiving messages
         while connecting_status:
             message_received = b""
@@ -66,7 +82,7 @@ def receive_data(sock: socket.socket) -> None:
                 buffer = sock.recv(32)
                 if buffer:
                     # print('received data chunk from server: ',
-                    #         repr(buffer))  # DEBUG
+                    #         repr(buffer))  # DEBUG 
                     message_received += buffer
                     if message_received.endswith(b"\n"):
                         break
@@ -90,7 +106,12 @@ def receive_data(sock: socket.socket) -> None:
 
                         # Update screen data
                         try:
-                            share_data = json_data
+                            share_data.update(json_data)
+
+                            print(f"this is share data in client: {share_data}")
+                            if ready_get_it.is_set():
+                                continue
+                            ready_get_it.set()
                         except Exception as e:
                             print(f"Error updating data: {e}")
 
@@ -107,11 +128,18 @@ def receive_data(sock: socket.socket) -> None:
         print("Existing Client...")
 
 def run_game() -> None:
-    # TODO:
     global share_data
-    
+
+    # Wait for initial data
+    while not ready_get_it.is_set():
+        print("Waiting for data...")
+
+    # Graphics instance
     graphic = Graphics(screen=(1200, 750), share_data=share_data)
+
+    # Run the graphics loop
     graphic.run_graphics()
+
 
 if __name__ == "__main__":
     """ Open socket to connect the server """ 
@@ -128,7 +156,6 @@ if __name__ == "__main__":
         receive_thread.start()
 
         # main_game
-        time.sleep(0.01)
         run_game()
 
     print("Client Closed")
