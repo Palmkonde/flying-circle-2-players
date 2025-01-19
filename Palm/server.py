@@ -63,12 +63,12 @@ from pprint import pprint
 HOST = "0.0.0.0"
 PORT = 5505
 
-PLAYER1_CENTER = (200, 400)
-PLAYER2_CENTER = (300, 400)
-PLAYER_RADIUS = 50
 
 SCREEN = (1200, 750)
 
+PLAYER_RADIUS = 50
+PLAYER1_CENTER = (SCREEN[0]//4, SCREEN[1]//2)
+PLAYER2_CENTER = (SCREEN[0] * 3 //4, SCREEN[1]//2)
 
 class Client:
     def __init__(self, client_socket: socket.socket, id: str) -> None:
@@ -125,7 +125,7 @@ class Server():
                     elif user_input.get('id') == 2:
                         player2_input = user_input.get('key_pressed')
 
-                    self.engine.run(player1key=key_apply(player1_input), player2key=key_apply(player2_input))
+                    self.engine.run(player1key=key_apply(player1_input), player2key=key_apply(player2_input), medals=40)
                 
                 self.game_state = self.engine.update_data() # Update game_state
 

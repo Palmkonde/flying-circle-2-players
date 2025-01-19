@@ -35,45 +35,13 @@ class Graphics:
 
         self.player_radius = player_radius
 
-    # def populate_players(self, data: dict) -> None:
-    #     players_data = data.get("players", [])
-    #     print("Players Data:", players_data)
-
-    #     self.players = [
-    #         {
-    #             "id": player["id"],
-    #             "color": self.COLORS[i % len(self.COLORS)],
-    #             "position": player.get("center", (0, 0)),
-    #             "score": player["score"],
-    #             "radius": 50,
-    #         }
-    #         for i, player in enumerate(players_data)
-    #     ]
-
     def draw_player(self):
         try:
             for player in self.data.get("players"):
                 pygame.draw.circle(surface=self.screen, color=self.COLORS[player["id"] - 1],
                                    center=player["player"]["center"], radius=self.player_radius)
-                pygame.draw.line(surface=self.screen, color=self.WHITE,
+                pygame.draw.line(surface=self.screen, color=self.BLACK, width=10,
                                  start_pos=player["player"]["center"], end_pos=player["player"]["direction"])
-
-        # pygame.draw.circle(self.screen, player['color'], (
-        #     player['position'][0], player['position'][1]), player['radius'])
-        # text_surface = self.font.render(player['name'], True, self.WHITE)
-        # text_rect = text_surface.get_rect(
-        #     center=(player['position'][0], player['position'][1]))
-        # pygame.draw.circle(
-        #     self.screen,
-        #     player["color"],
-        #     (player["position"][0], player["position"][1]),
-        #     player["radius"],
-        # )
-        # text_surface = self.font.render(player["name"], True, self.WHITE)
-        # text_rect = text_surface.get_rect(
-        #     center=(player["position"][0], player["position"][1])
-        # )
-        # self.screen.blit(text_surface, text_rect)
         except Exception as e:
             print(f"Error on draw_player: {e}")
 
@@ -104,7 +72,6 @@ class Graphics:
             )
 
     def draw_waiting_screen(self):
-        # print(f"Data on draw wating screen: {self.data}")
         if self.data.get("state") == 0:
             waiting_font = pygame.font.Font(None, 72)
             waiting_text = waiting_font.render(
