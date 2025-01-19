@@ -48,8 +48,7 @@ def send_message(server_socket: socket.socket) -> None:
                 }
                 server_socket.sendall((json.dumps(data) + "\n").encode())
 
-            pygame.time.delay(50)  # Small delay to reduce network load
-            pass
+            pygame.time.delay(100)  # Small delay to reduce network load
 
     except Exception as e:
         print(f"Error in send_key_presses: {e}")
@@ -128,7 +127,7 @@ def receive_data(sock: socket.socket) -> None:
         print("Existing Client...")
 
 def run_game() -> None:
-    global share_data
+    global share_data, game
 
     # Wait for initial data
     while not ready_get_it.is_set():
