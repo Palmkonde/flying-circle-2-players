@@ -159,7 +159,8 @@ class GameEngine:
                 self.state = 0
 
         # Initialize medals list
-        for i in range(medals):
+        
+        for i in range(medals - len(self.medals_list)):
             while True:
                 spawn_x = random.randint(100, self.screen[0] - 100)
                 spawn_y = random.randint(100, self.screen[1] - 100)
