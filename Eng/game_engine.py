@@ -121,7 +121,11 @@ class GameEngine:
         self.screen = screen
         self.medals_list = []
         self.state = 0  # Game starts in a waiting state
-        self.data = dict()
+        self.data = {
+            "state": 0,
+            "players": [],
+            "coin_position": []
+        }
 
         self.player1ready, self.player2ready = False, False
 
