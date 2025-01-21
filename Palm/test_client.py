@@ -3,6 +3,8 @@ import threading
 import json
 import pygame
 from Arm.graphic2 import Graphics
+import logging
+from logging.handlers import RotatingFileHandler
 
 # DEBUG
 from pprint import pprint
@@ -16,12 +18,25 @@ is_first_join = True
 game = None 
 share_data = {}
 ready_get_id = threading.Event()
+log_directory = "./Palm/logs"
+log_file = "game_client.log"
+max_log_size = 1 * 1024 * 1024
 
 pygame.init()
 
 class Client:
     def __init__(self, id: int) -> None:
         self.id = id
+
+logger = logging.getLogger("GameClientLogger")
+logger.setLevel(logging.DEBUG)
+
+log_file_path = log_directory + "/" + log_file
+handler = RotatingFileHandler(log_file_path, maxBytes=max_log_size)
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+
+logger.addHandler(handler)
 
 def send_message(server_socket: socket.socket) -> None:
     """ send a message to server """
@@ -47,12 +62,15 @@ def send_message(server_socket: socket.socket) -> None:
                     "key_pressed": key_data['key']
                 }
                 server_socket.sendall((json.dumps(data) + "\n").encode())
+                logger.info(f"Player {game.id} pressed: {key_data['key']}")
 
             pygame.time.delay(100)  # Small delay to reduce network load
 
     except Exception as e:
         print(f"Error in send_key_presses: {e}")
         connecting_status = False
+
+
         
 
 def receive_data(sock: socket.socket) -> None:
