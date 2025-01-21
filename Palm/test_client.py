@@ -17,6 +17,7 @@ game = None
 share_data = {}
 ready_get_id = threading.Event()
 
+
 pygame.init()
 
 class Client:

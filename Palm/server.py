@@ -59,6 +59,8 @@ import queue
 
 # DEBUG Tool
 from pprint import pprint
+import logging
+from logging.handlers import RotatingFileHandler
 
 HOST = "0.0.0.0"
 PORT = 5505
@@ -68,7 +70,23 @@ SCREEN = (1200, 750)
 
 PLAYER_RADIUS = 50
 PLAYER1_CENTER = (SCREEN[0]//4, SCREEN[1]//2)
-PLAYER2_CENTER = (SCREEN[0] * 3 //4, SCREEN[1]//2)
+PLAYER2_CENTER = (SCREEN[0] * 3 // 4, SCREEN[1]//2)
+
+# logging
+logger = logging.getLogger()
+filehandler = RotatingFileHandler("./Palm/logs/server.log",
+                                  mode="a",
+                                  maxBytes=1*1024*1024)
+filehandler.setLevel(logging.INFO)
+
+# formatter
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+filehandler.setFormatter(formatter)
+
+logger.setLevel(logging.INFO)
+logger.addHandler(filehandler)
+
 
 class Client:
     def __init__(self, client_socket: socket.socket, id: str) -> None:
@@ -83,6 +101,7 @@ class Client:
 
         except Exception as e:
             print(f"error to update user: {e}")
+            logging.error("error to update user: %s", e)
 
 
 class Server():
@@ -95,8 +114,8 @@ class Server():
             "state": 0,
             "players": [],
             "coin_position": []
-        } 
-        
+        }
+
         self.lock = threading.Lock()
 
         player1 = PlayerCircle(id=1, center=PLAYER1_CENTER,
@@ -104,18 +123,19 @@ class Server():
         player2 = PlayerCircle(id=2, center=PLAYER2_CENTER,
                                radius=PLAYER_RADIUS, direction=pi)
 
-        self.engine = GameEngine(player1=player1, player2=player2, screen=SCREEN)
+        self.engine = GameEngine(
+            player1=player1, player2=player2, screen=SCREEN)
 
     def broadcast(self) -> None:
         """ Update to every player """
 
         while True:
             with self.lock:
-                
+
                 # get user_input from queue
                 while not self.input_queue.empty():
                     user_input = self.input_queue.get()
-                                        
+
                     player1_input = None
                     player2_input = None
 
@@ -125,24 +145,28 @@ class Server():
                     elif user_input.get('id') == 2:
                         player2_input = user_input.get('key_pressed')
 
-                    self.engine.run(player1key=key_apply(player1_input), player2key=key_apply(player2_input), medals=40)
-                
-                self.game_state = self.engine.update_data() # Update game_state
+                    self.engine.run(player1key=key_apply(player1_input),
+                                    player2key=key_apply(player2_input), medals=40)
+
+                self.game_state = self.engine.update_data()  # Update game_state
 
                 for id in list(self.clients.keys()):
-                    client = self.clients.get(id)  # Safely get the client object
+                    # Safely get the client object
+                    client = self.clients.get(id)
                     if not client:
                         continue
-                    
+
                     # Wait untill player got an ID
                     if not client.ready_event.is_set():
                         continue
-                    
+
                     try:
                         client.update_user(self.game_state)
+                        logger.info("Send game_state to player")
 
                     except Exception as e:
                         print(f"error broadcasting to {id}: {e}")
+                        logger.error("error broadcastring to %d: %s", id, e)
 
                         # Handle if client not appear in clients
                         if id in self.clients:
@@ -157,12 +181,12 @@ class Server():
             id_dict = {"id": client.id}
             client.client_socket.send(
                 (json.dumps(id_dict) + '\n').encode('utf-8'))
-            
-            client.ready_event.set() # Send signal to be ready 
+
+            client.ready_event.set()  # Send signal to be ready
 
             while True:
                 buffer = b""
-                
+
                 # receiving user input
                 while True:
                     data = client.client_socket.recv(32)
@@ -175,6 +199,7 @@ class Server():
                             break
                     else:
                         print(f"{client.id} has disconnected")
+                        logger.info("%s has disconnected", args=(client.id))
                         raise ConnectionError
 
                 # When we have recieved some data
@@ -185,17 +210,22 @@ class Server():
                         # client.client_socket.send("Data recieved".encode()) # DEBUG
 
                         json_data = json.loads(buffer.strip())
-                        self.input_queue.put(json_data) # put user input to queue
+                        # put user input to queue
+                        self.input_queue.put(json_data)
+                        logger.info("Received data from %s: %s",
+                                    client.id, json_data)
 
                         # DEBUG
                         print(f"Player {client.id}'s data updated")
 
                     except json.JSONDecodeError as e:
                         print(f"Error to decode JSON data: {e}")
+                        logger.error("Error to decode JSON data: %s", e)
 
         except ConnectionError:
             # Show on the server and send it to everyone
             print(f"{client.id} left the game!")
+            logger.info("%s left the game", client.id)
 
         finally:
             # clear and remove everything
@@ -238,13 +268,15 @@ class Server():
             # add player to list
             id = len(self.clients) + 1
             print(f"players {id} joinned")
+            logger.info("%s is joined set to player %s",
+                        client_address, id)
             self.clients[id] = Client(client_socket, id)
 
             # Create new Thread for each player
             client_thread = threading.Thread(
                 target=self.handle_client, args=(self.clients[id], ))
             broadcast_thread = threading.Thread(target=self.broadcast)
-            
+
             broadcast_thread.start()
             client_thread.start()
 
